@@ -72,6 +72,18 @@ fi
 
 echo "🔧 3. Docker Compose Installation..."
 
+# Funktion für Docker Compose Befehle
+docker_compose_cmd() {
+    if command -v docker-compose &> /dev/null; then
+        docker-compose "$@"
+    elif docker compose version &> /dev/null 2>&1; then
+        docker compose "$@"
+    else
+        echo "❌ Weder 'docker-compose' noch 'docker compose' verfügbar!"
+        return 1
+    fi
+}
+
 # Prüfe Docker Compose
 if command -v docker-compose &> /dev/null; then
     echo "✅ Docker Compose bereits verfügbar"
@@ -207,12 +219,12 @@ if [ "$REBOOT_NEEDED" = true ] || [ "$DOCKER_WORKING" = false ]; then
     echo ""
     echo "Nach Neuanmeldung/Neustart:"
     echo "💡 cd \$HOME/sensor-monitor-pi5"
-    echo "💡 docker-compose up -d  # Container starten"
+    echo "💡 docker compose up -d  # Container starten"
     echo "💡 ./setup_docker_autostart.sh  # Autostart einrichten"
     echo "💡 ./start_influxdb_monitoring.sh  # Monitoring starten"
 else
     echo "🚀 Container können sofort gestartet werden:"
-    echo "💡 docker-compose up -d"
+    echo "💡 docker compose up -d"
     echo "💡 ./setup_docker_autostart.sh"
     echo "💡 ./start_influxdb_monitoring.sh"
     
@@ -222,10 +234,10 @@ else
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "🚀 Starte InfluxDB Container..."
-        docker-compose up -d
+        docker_compose_cmd up -d
         sleep 5
         echo "🔍 Container Status:"
-        docker-compose ps
+        docker_compose_cmd ps
     fi
 fi
 

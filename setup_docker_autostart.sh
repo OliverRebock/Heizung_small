@@ -37,8 +37,8 @@ After=docker.service
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=/home/pi/sensor-monitor-pi5
-ExecStart=/usr/bin/docker-compose up -d
-ExecStop=/usr/bin/docker-compose down
+ExecStart=/bin/bash -c 'if command -v docker-compose > /dev/null; then docker-compose up -d; else docker compose up -d; fi'
+ExecStop=/bin/bash -c 'if command -v docker-compose > /dev/null; then docker-compose down; else docker compose down; fi'
 TimeoutStartSec=0
 User=pi
 Group=pi
@@ -59,7 +59,7 @@ echo "🚀 Verfügbare Befehle:"
 echo "💡 sudo systemctl start pi5-influxdb    # Container starten"
 echo "💡 sudo systemctl stop pi5-influxdb     # Container stoppen"  
 echo "💡 sudo systemctl status pi5-influxdb   # Status prüfen"
-echo "💡 docker-compose ps                    # Container anzeigen"
+echo "💡 docker compose ps                    # Container anzeigen"
 echo ""
 
 # Erste Ausführung
@@ -69,7 +69,11 @@ sudo systemctl start pi5-influxdb
 # Status prüfen
 sleep 5
 echo "🔍 Container Status:"
-docker-compose ps
+if command -v docker-compose &> /dev/null; then
+    docker-compose ps
+else
+    docker compose ps
+fi
 
 echo ""
 echo "✅ InfluxDB Autostart konfiguriert!"

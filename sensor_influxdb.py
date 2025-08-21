@@ -96,7 +96,7 @@ class Pi5InfluxDBIntegration:
                 
         except Exception as e:
             logger.error(f"❌ InfluxDB Verbindung fehlgeschlagen: {e}")
-            logger.info("💡 Prüfe ob Docker Container läuft: docker-compose ps")
+            logger.info("💡 Prüfe ob Docker Container läuft: docker compose ps")
             self.connected = False
             return False
     
