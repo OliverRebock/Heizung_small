@@ -116,7 +116,7 @@ pip install RPi.GPIO  # Fallback-Unterstützung
 ### Ein-Befehl-Installation für Pi 5
 ```bash
 # Spezielle Pi 5 Installation:
-wget https://raw.githubusercontent.com/OliverRebock/HeizungsPI2/main/install_sensors.sh
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_sensors.sh
 chmod +x install_sensors.sh
 ./install_sensors.sh
 ```
