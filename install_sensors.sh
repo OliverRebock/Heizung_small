@@ -124,9 +124,12 @@ echo "📄 10. Pi 5 Test-Scripts erstellen..."
 cat > test_sensors.sh << 'EOF'
 #!/bin/bash
 echo "🌡️ Sensor-Test für Raspberry Pi 5"
+echo "================================"
 cd ~/sensor-monitor-pi5
 source venv/bin/activate
-python sensor_monitor.py
+
+echo "Führe einmalige Sensor-Messung durch..."
+python sensor_monitor.py single
 EOF
 
 chmod +x test_sensors.sh
@@ -134,9 +137,40 @@ chmod +x test_sensors.sh
 cat > start_monitoring.sh << 'EOF'
 #!/bin/bash
 echo "🔄 Kontinuierliche Überwachung - Pi 5"
+echo "===================================="
 cd ~/sensor-monitor-pi5
 source venv/bin/activate
-python sensor_monitor.py
+
+echo "Verfügbare Monitoring-Modi:"
+echo "1. 30 Sekunden Intervall (empfohlen)"
+echo "2. 60 Sekunden Intervall" 
+echo "3. 300 Sekunden Intervall (5 Min)"
+echo "4. High-Performance Modus (10s)"
+
+read -p "Wähle Modus (1-4): " mode
+
+case $mode in
+    1)
+        echo "⏰ Starte 30s Monitoring..."
+        python sensor_monitor.py continuous 30
+        ;;
+    2)
+        echo "⏰ Starte 60s Monitoring..."
+        python sensor_monitor.py continuous 60
+        ;;
+    3)
+        echo "⏰ Starte 300s Monitoring..."
+        python sensor_monitor.py continuous 300
+        ;;
+    4)
+        echo "⚡ Starte High-Performance Modus..."
+        python sensor_monitor.py continuous 10
+        ;;
+    *)
+        echo "❌ Ungültige Auswahl"
+        exit 1
+        ;;
+esac
 EOF
 
 chmod +x start_monitoring.sh

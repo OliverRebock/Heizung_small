@@ -453,7 +453,9 @@ class Pi5SensorMonitor:
         }
 
 def main():
-    """Hauptfunktion für Pi 5"""
+    """Hauptfunktion für Pi 5 mit Command-Line Parameter Support"""
+    import sys
+    
     print("🌡️  Raspberry Pi 5 Sensor-Monitor")
     print("6x DS18B20 + 1x DHT22 (Pi 5 optimiert)")
     print("=" * 55)
@@ -469,6 +471,24 @@ def main():
         logger.error("❌ Pi 5 Hardware-Check fehlgeschlagen!")
         return 1
     
+    # Command-Line Parameter prüfen
+    if len(sys.argv) > 1:
+        mode = sys.argv[1].lower()
+        if mode == "single":
+            logger.info("🎯 Command-Line Modus: Einmalige Messung")
+            monitor.single_reading()
+            return 0
+        elif mode == "continuous":
+            interval = int(sys.argv[2]) if len(sys.argv) > 2 else 30
+            logger.info(f"🔄 Command-Line Modus: Kontinuierliche Überwachung ({interval}s)")
+            monitor.continuous_monitoring(interval)
+            return 0
+        elif mode == "parallel":
+            logger.info("⚡ Command-Line Modus: High-Performance Parallel-Reading")
+            monitor.parallel_reading()
+            return 0
+    
+    # Interaktiver Modus wenn keine Parameter
     print("\nPi 5 Optionen:")
     print("1. Einmalige Messung")
     print("2. Kontinuierliche Überwachung (30s) - empfohlen für Pi 5")
