@@ -9,6 +9,7 @@ import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 import json
+import configparser
 
 # InfluxDB Client Import
 try:
@@ -29,6 +30,14 @@ except ImportError as e:
     logging.error(f"❌ Sensor Monitor nicht verfügbar: {e}")
     SENSOR_MONITOR_AVAILABLE = False
 
+# Individualized Sensors Import
+try:
+    from individualized_sensors import IndividualizedSensorManager
+    INDIVIDUALIZED_SENSORS_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"⚠️  Individualized Sensors nicht verfügbar: {e}")
+    INDIVIDUALIZED_SENSORS_AVAILABLE = False
+
 # Logging konfigurieren
 logging.basicConfig(
     level=logging.INFO,
@@ -41,14 +50,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class Pi5InfluxDBIntegration:
-    """InfluxDB Integration für Pi 5 Sensor-Daten"""
+    """InfluxDB Integration für Pi 5 Sensor-Daten mit individuellen Namen"""
     
     def __init__(self, 
                  host: str = "localhost",
                  port: int = 8086,
-                 token: str = "pi5-sensor-token-2024-super-secret",
+                 token: str = "",
                  org: str = "Pi5SensorOrg",
-                 bucket: str = "sensor_data"):
+                 bucket: str = "sensor_data",
+                 config_path: str = "config.ini"):
         
         self.host = host
         self.port = port
@@ -56,6 +66,20 @@ class Pi5InfluxDBIntegration:
         self.org = org
         self.bucket = bucket
         self.url = f"http://{host}:{port}"
+        self.config_path = config_path
+        
+        # Config laden
+        self.config = configparser.ConfigParser()
+        self.config.read(config_path)
+        
+        # Sensor Manager für individualisierte Namen
+        self.sensor_manager = None
+        if INDIVIDUALIZED_SENSORS_AVAILABLE:
+            try:
+                self.sensor_manager = IndividualizedSensorManager(config_path)
+                logger.info("✅ Individualisierte Sensor-Namen aktiviert")
+            except Exception as e:
+                logger.warning(f"⚠️  Individualisierte Sensor-Namen nicht verfügbar: {e}")
         
         self.client = None
         self.write_api = None
@@ -78,9 +102,10 @@ class Pi5InfluxDBIntegration:
         try:
             self.client = InfluxDBClient(
                 url=self.url,
-                token=self.token,
+                token=self.token if self.token else None,
                 org=self.org,
-                timeout=10000
+                timeout=10000,
+                verify_ssl=False
             )
             
             # Verbindung testen
@@ -103,7 +128,7 @@ class Pi5InfluxDBIntegration:
     def write_sensor_data(self, ds18b20_temps: Dict[str, float], 
                          dht22_temp: Optional[float], 
                          dht22_humidity: Optional[float]) -> bool:
-        """Sensor-Daten in InfluxDB schreiben"""
+        """Sensor-Daten in InfluxDB schreiben mit individuellen Namen"""
         if not self.connected:
             logger.warning("⚠️  Keine InfluxDB Verbindung - versuche Reconnect...")
             if not self.connect():
@@ -113,39 +138,73 @@ class Pi5InfluxDBIntegration:
             points = []
             timestamp = datetime.utcnow()
             
-            # DS18B20 Temperaturdaten
-            for sensor_name, temperature in ds18b20_temps.items():
-                if temperature is not None:
+            # Wenn individualisierte Sensoren verfügbar sind, verwende diese
+            if self.sensor_manager:
+                try:
+                    individualized_data = self.sensor_manager.get_individualized_sensor_data()
+                    
+                    # Alle individualisierten Sensor-Daten verarbeiten
+                    for sensor_name, data in individualized_data.items():
+                        if data['value'] is not None:
+                            measurement = "temperature" if data['measurement'] == "temperature" else "humidity"
+                            field_name = f"{data['measurement']}_{data['unit']}"
+                            
+                            point = Point(measurement) \
+                                .tag("sensor_type", data['sensor_type']) \
+                                .tag("sensor_name", sensor_name) \
+                                .tag("sensor_id", data['sensor_id']) \
+                                .tag("location", "heizungsanlage") \
+                                .tag("unit", data['unit']) \
+                                .tag("status", data['status']) \
+                                .field(field_name, float(data['value'])) \
+                                .time(timestamp)
+                            points.append(point)
+                            
+                    logger.info(f"📊 Verwende individualisierte Sensor-Namen ({len(points)} Punkte)")
+                    
+                except Exception as e:
+                    logger.warning(f"⚠️  Fehler bei individualisierten Sensoren: {e}")
+                    logger.info("💡 Fallback zu Standard-Namen...")
+                    # Fallback zu Standard-Methode unten
+                    pass
+            
+            # Fallback oder wenn individualisierte Sensoren nicht verfügbar
+            if not points:
+                # DS18B20 Temperaturdaten (Standard-Namen)
+                for sensor_name, temperature in ds18b20_temps.items():
+                    if temperature is not None:
+                        point = Point("temperature") \
+                            .tag("sensor_type", "DS18B20") \
+                            .tag("sensor_name", sensor_name) \
+                            .tag("location", "pi5_system") \
+                            .tag("unit", "celsius") \
+                            .field("temperature_celsius", float(temperature)) \
+                            .time(timestamp)
+                        points.append(point)
+                
+                # DHT22 Temperaturdaten
+                if dht22_temp is not None:
                     point = Point("temperature") \
-                        .tag("sensor_type", "DS18B20") \
-                        .tag("sensor_name", sensor_name) \
+                        .tag("sensor_type", "DHT22") \
+                        .tag("sensor_name", "DHT22_1") \
                         .tag("location", "pi5_system") \
                         .tag("unit", "celsius") \
-                        .field("temperature_celsius", float(temperature)) \
+                        .field("temperature_celsius", float(dht22_temp)) \
                         .time(timestamp)
                     points.append(point)
-            
-            # DHT22 Temperaturdaten
-            if dht22_temp is not None:
-                point = Point("temperature") \
-                    .tag("sensor_type", "DHT22") \
-                    .tag("sensor_name", "DHT22_1") \
-                    .tag("location", "pi5_system") \
-                    .tag("unit", "celsius") \
-                    .field("temperature_celsius", float(dht22_temp)) \
-                    .time(timestamp)
-                points.append(point)
-            
-            # DHT22 Luftfeuchtigkeitsdaten
-            if dht22_humidity is not None:
-                point = Point("humidity") \
-                    .tag("sensor_type", "DHT22") \
-                    .tag("sensor_name", "DHT22_1") \
-                    .tag("location", "pi5_system") \
-                    .tag("unit", "percent") \
-                    .field("humidity_percent", float(dht22_humidity)) \
-                    .time(timestamp)
-                points.append(point)
+                
+                # DHT22 Luftfeuchtigkeitsdaten
+                if dht22_humidity is not None:
+                    point = Point("humidity") \
+                        .tag("sensor_type", "DHT22") \
+                        .tag("sensor_name", "DHT22_1") \
+                        .tag("location", "pi5_system") \
+                        .tag("unit", "percent") \
+                        .field("humidity_percent", float(dht22_humidity)) \
+                        .time(timestamp)
+                    points.append(point)
+                
+                logger.info(f"📊 Verwende Standard-Sensor-Namen ({len(points)} Punkte)")
             
             # System-Metadaten
             system_point = Point("system_info") \
