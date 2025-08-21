@@ -6,7 +6,7 @@ Schreibt Sensor-Daten in InfluxDB Docker Container
 
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 import json
 
@@ -120,8 +120,8 @@ class Pi5InfluxDBIntegration:
                         .tag("sensor_type", "DS18B20") \
                         .tag("sensor_name", sensor_name) \
                         .tag("location", "pi5_system") \
-                        .field("value", float(temperature)) \
-                        .field("unit", "celsius") \
+                        .tag("unit", "celsius") \
+                        .field("temperature_celsius", float(temperature)) \
                         .time(timestamp)
                     points.append(point)
             
@@ -131,8 +131,8 @@ class Pi5InfluxDBIntegration:
                     .tag("sensor_type", "DHT22") \
                     .tag("sensor_name", "DHT22_1") \
                     .tag("location", "pi5_system") \
-                    .field("value", float(dht22_temp)) \
-                    .field("unit", "celsius") \
+                    .tag("unit", "celsius") \
+                    .field("temperature_celsius", float(dht22_temp)) \
                     .time(timestamp)
                 points.append(point)
             
@@ -142,8 +142,8 @@ class Pi5InfluxDBIntegration:
                     .tag("sensor_type", "DHT22") \
                     .tag("sensor_name", "DHT22_1") \
                     .tag("location", "pi5_system") \
-                    .field("value", float(dht22_humidity)) \
-                    .field("unit", "percent") \
+                    .tag("unit", "percent") \
+                    .field("humidity_percent", float(dht22_humidity)) \
                     .time(timestamp)
                 points.append(point)
             
@@ -183,6 +183,32 @@ class Pi5InfluxDBIntegration:
             return is_healthy
         except Exception as e:
             logger.error(f"❌ InfluxDB Health Check Fehler: {e}")
+            return False
+    
+    def clean_old_data(self) -> bool:
+        """Alte Daten mit falschen Feldtypen löschen"""
+        if not self.connected:
+            if not self.connect():
+                return False
+        
+        try:
+            # Lösche Daten mit den alten Feldnamen
+            delete_api = self.client.delete_api()
+            
+            # Lösche alle Daten der letzten 7 Tage (um sicherzugehen)
+            start = datetime.utcnow() - timedelta(days=7)
+            stop = datetime.utcnow()
+            
+            delete_api.delete(start, stop, 
+                            predicate='_measurement="temperature" OR _measurement="humidity"',
+                            bucket=self.bucket,
+                            org=self.org)
+            
+            logger.info("🧹 Alte InfluxDB Daten mit falschen Feldtypen gelöscht")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Fehler beim Löschen alter Daten: {e}")
             return False
     
     def close(self):
@@ -324,6 +350,13 @@ def main():
                 logger.info("🔍 InfluxDB Verbindungstest")
                 success = logger_instance.influx_db.test_connection()
                 return 0 if success else 1
+            elif mode == "clean":
+                logger.info("🧹 Bereinige alte InfluxDB Daten...")
+                success = logger_instance.influx_db.clean_old_data()
+                if success:
+                    logger.info("✅ Datenbereinigung abgeschlossen")
+                    logger.info("💡 Starte jetzt neue Messungen mit korrekten Feldtypen")
+                return 0 if success else 1
         
         # Interaktiver Modus
         print("\nInfluxDB Modi:")
@@ -331,8 +364,9 @@ def main():
         print("2. Kontinuierliche Überwachung (30s) → InfluxDB")
         print("3. Kontinuierliche Überwachung (60s) → InfluxDB")
         print("4. InfluxDB Verbindungstest")
+        print("5. Alte Daten bereinigen (bei Feldtyp-Problemen)")
         
-        choice = input("\nWahl (1-4): ").strip()
+        choice = input("\nWahl (1-5): ").strip()
         
         if choice == "1":
             logger_instance.single_reading_to_influx()
@@ -342,6 +376,11 @@ def main():
             logger_instance.continuous_monitoring_to_influx(60)
         elif choice == "4":
             logger_instance.influx_db.test_connection()
+        elif choice == "5":
+            success = logger_instance.influx_db.clean_old_data()
+            if success:
+                logger.info("✅ Datenbereinigung abgeschlossen")
+                logger.info("💡 Starte jetzt neue Messungen mit: python sensor_influxdb.py single")
         else:
             logger.error("❌ Ungültige Auswahl")
             return 1
