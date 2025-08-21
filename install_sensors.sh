@@ -14,7 +14,7 @@ chmod +x sensor_monitor.py
 wget -O test_sensors_fixed.py https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/test_sensors_fixed.py  
 chmod +x test_sensors_fixed.py
 
-echo "📄 10. Pi 5 Test-Scripts erstellen..."Test-Scripts erstellen..."
+echo "📄 10. Pi 5 Test-Scripts erstellen..."
 cat > test_sensors.sh << 'EOF'
 #!/bin/bash
 echo "🌡️ Sensor-Test für Raspberry Pi 5"
@@ -147,21 +147,7 @@ echo "🌡️ Sensor-Test für Raspberry Pi 5"
 cd ~/sensor-monitor-pi5
 source venv/bin/activate
 python sensor_monitor_pi5.py
-EOF
-
-chmod +x test_sensors_pi5.sh
-
-cat > start_monitoring_pi5.sh << 'EOF'
-#!/bin/bash
-echo "🔄 Kontinuierliche Überwachung - Pi 5"
-cd ~/sensor-monitor-pi5
-source venv/bin/activate
-python sensor_monitor_pi5.py
-EOF
-
-chmod +x start_monitoring_pi5.sh
-
-echo "🔍 10. Pi 5 Hardware-Check..."
+echo "🔍 11. Pi 5 Hardware-Check..."
 echo "    📝 Erstelle Pi 5 Hardware-Check Script..."
 cat > pi5_hardware_check.sh << 'EOF'
 #!/bin/bash
