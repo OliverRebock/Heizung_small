@@ -16,7 +16,7 @@ chmod +x install_sensors.sh
 # Nach Neustart
 sudo reboot
 cd ~/sensor-monitor-pi5
-./test_sensors_pi5.sh
+./test_sensors.sh
 ```
 
 ## 📋 Was ist enthalten

@@ -1,10 +1,39 @@
 #!/bin/bash
 """
 Installations-Script für 6x DS18B20 + 1x DHT22 Sensor-Monitor
-Speziell optimiert für Raspberry Pi 5
-"""
+Speziell optimiert für Raspberry Piecho "📄 9. echo "👥 8. GPIO-Berechtigungen für Pi 5..."
+sudo usermod -a -G gpio $USER
+sudo usermod -a -G dialout $USER
 
-echo "🌡️  Sensor-Monitor Installation für Raspberry Pi 5"
+echo "📄 9. Python-Scripts herunterladen..."
+# Sensor-Monitor Script
+wget -O sensor_monitor.py https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/sensor_monitor.py
+chmod +x sensor_monitor.py
+
+# Test-Script
+wget -O test_sensors_fixed.py https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/test_sensors_fixed.py  
+chmod +x test_sensors_fixed.py
+
+echo "📄 10. Pi 5 Test-Scripts erstellen..."Test-Scripts erstellen..."
+cat > test_sensors.sh << 'EOF'
+#!/bin/bash
+echo "🌡️ Sensor-Test für Raspberry Pi 5"
+cd ~/sensor-monitor-pi5
+source venv/bin/activate
+python sensor_monitor.py
+EOF
+
+chmod +x test_sensors.sh
+
+cat > start_monitoring.sh << 'EOF'
+#!/bin/bash
+echo "🔄 Kontinuierliche Überwachung - Pi 5"
+cd ~/sensor-monitor-pi5
+source venv/bin/activate
+python sensor_monitor.py
+EOF
+
+chmod +x start_monitoring.shensor-Monitor Installation für Raspberry Pi 5"
 echo "================================================="
 echo "Hardware: 6x DS18B20 + 1x DHT22"
 echo "Platform: Raspberry Pi 5 (optimiert)"
@@ -217,18 +246,18 @@ if [ "$REBOOT_NEEDED" = true ]; then
     echo "Nach dem Neustart:"
     echo "💡 cd ~/sensor-monitor-pi5"
     echo "💡 ./pi5_hardware_check.sh"
-    echo "💡 ./test_sensors_pi5.sh"
+    echo "💡 ./test_sensors.sh"
 else
     echo "🚀 Sofort starten:"
     echo "💡 ./pi5_hardware_check.sh"
-    echo "💡 ./test_sensors_pi5.sh"
+    echo "💡 ./test_sensors.sh"
 fi
 
 echo ""
 echo "📊 Pi 5 manuelle Tests:"
 echo "💡 cd ~/sensor-monitor-pi5"
 echo "💡 source venv/bin/activate"
-echo "💡 python sensor_monitor_pi5.py"
+echo "💡 python sensor_monitor.py"
 echo ""
 
 # Pi 5 spezifischer Sensor-Check

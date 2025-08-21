@@ -125,7 +125,7 @@ Nach der Installation:
 ```bash
 sudo reboot  # Immer erforderlich für Pi 5
 cd ~/sensor-monitor-pi5
-./test_sensors_pi5.sh
+./test_sensors.sh
 ```
 
 ### Pi 5 Performance-Optimierungen
@@ -305,14 +305,14 @@ else:
 ### Einmalige Messung
 ```bash
 cd ~/sensor-monitor-pi5
-./test_sensors_pi5.sh
+./test_sensors.sh
 # Wähle Option 1
 ```
 
 ### Kontinuierliche Überwachung (Pi 5 optimiert)
 ```bash
 cd ~/sensor-monitor-pi5
-./start_monitoring_pi5.sh
+./start_monitoring.sh
 # Wähle Option 2 (30s) - empfohlen für Pi 5
 # Wähle Option 3 (60s) - für stromsparenden Betrieb
 # Wähle Option 4 (300s) - für Langzeit-Monitoring
@@ -324,18 +324,18 @@ cd ~/sensor-monitor-pi5
 cd ~/sensor-monitor-pi5
 source venv/bin/activate
 python3 -c "
-from sensor_monitor_pi5 import SensorMonitor
-monitor = SensorMonitor(high_performance=True)
+from sensor_monitor import Pi5SensorMonitor
+monitor = Pi5SensorMonitor(high_performance=True)
 monitor.continuous_monitoring(interval=10)  # 10s Intervall
 "
 ```
 
 ### Programmierung eigener Scripts für Pi 5
 ```python
-from sensor_monitor_pi5 import SensorMonitor
+from sensor_monitor import Pi5SensorMonitor
 
 # Pi 5 optimierte Konfiguration
-monitor = SensorMonitor(
+monitor = Pi5SensorMonitor(
     high_performance=True,    # Pi 5 Performance-Modus
     error_recovery=True,      # Automatische Fehlerbehandlung
     parallel_reading=True     # Paralleles Sensor-Reading
