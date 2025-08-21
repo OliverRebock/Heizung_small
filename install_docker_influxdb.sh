@@ -1,8 +1,8 @@
 #!/bin/bash
-"""
-Docker + InfluxDB Installation für Raspberry Pi 5
-Erweitert das Sensor-System um Datenbank-Integration
-"""
+#
+# Docker + InfluxDB Installation für Raspberry Pi 5
+# Erweitert das Sensor-System um Datenbank-Integration
+#
 
 echo "🐳 Docker + InfluxDB Installation für Raspberry Pi 5"
 echo "=================================================="
@@ -10,7 +10,7 @@ echo "Erweitert das Pi 5 Sensor-System um Datenbank-Logging"
 echo ""
 
 # Prüfe ob Sensor-System bereits installiert ist
-if [ ! -d "~/sensor-monitor-pi5" ]; then
+if [ ! -d "$HOME/sensor-monitor-pi5" ]; then
     echo "❌ Sensor-System nicht gefunden!"
     echo "💡 Führe zuerst die Basis-Installation aus:"
     echo "💡 curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_sensors.sh | bash"
@@ -18,7 +18,7 @@ if [ ! -d "~/sensor-monitor-pi5" ]; then
 fi
 
 # In sensor-monitor-pi5 Verzeichnis wechseln
-cd ~/sensor-monitor-pi5
+cd "$HOME/sensor-monitor-pi5"
 
 echo "🔍 1. System-Anforderungen prüfen..."
 
@@ -142,7 +142,7 @@ cat > start_influxdb_monitoring.sh << 'EOF'
 #!/bin/bash
 echo "🗄️ InfluxDB Monitoring - Pi 5"
 echo "============================"
-cd ~/sensor-monitor-pi5
+cd "$HOME/sensor-monitor-pi5"
 source venv/bin/activate
 
 echo "Verfügbare InfluxDB Modi:"
@@ -206,7 +206,7 @@ if [ "$REBOOT_NEEDED" = true ] || [ "$DOCKER_WORKING" = false ]; then
     echo "💡 Docker-Berechtigungen werden erst nach Neuanmeldung aktiv"
     echo ""
     echo "Nach Neuanmeldung/Neustart:"
-    echo "💡 cd ~/sensor-monitor-pi5"
+    echo "💡 cd \$HOME/sensor-monitor-pi5"
     echo "💡 docker-compose up -d  # Container starten"
     echo "💡 ./setup_docker_autostart.sh  # Autostart einrichten"
     echo "💡 ./start_influxdb_monitoring.sh  # Monitoring starten"
