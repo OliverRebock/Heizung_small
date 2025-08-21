@@ -290,15 +290,15 @@ class Pi5DHT22Sensor:
 class Pi5SensorMonitor:
     """Pi 5 optimierte Hauptklasse für Sensor-Überwachung"""
     
-    def __init__(self, high_performance: bool = True, error_recovery: bool = True, parallel_reading: bool = True):
+    def __init__(self, high_performance: bool = True, error_recovery: bool = True, use_parallel_reading: bool = True):
         self.high_performance = high_performance
         self.error_recovery = error_recovery
-        self.parallel_reading = parallel_reading
+        self.use_parallel_reading = use_parallel_reading
         
         logger.info(f"🚀 Pi 5 Sensor-Monitor initialisiert:")
         logger.info(f"   ⚡ High-Performance: {high_performance}")
         logger.info(f"   🔄 Error-Recovery: {error_recovery}")
-        logger.info(f"   🔀 Parallel-Reading: {parallel_reading}")
+        logger.info(f"   🔀 Parallel-Reading: {use_parallel_reading}")
         
         self.ds18b20_manager = Pi5DS18B20Manager(high_performance=high_performance)
         self.dht22_sensor = Pi5DHT22Sensor(pin=18, use_pi5_optimizations=True)
@@ -425,7 +425,7 @@ class Pi5SensorMonitor:
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 logger.info(f"\n⏰ Pi 5 Messung #{reading_count} um {timestamp}")
                 
-                if self.parallel_reading:
+                if self.use_parallel_reading:
                     self.parallel_reading()
                 else:
                     self.single_reading()
@@ -446,7 +446,7 @@ class Pi5SensorMonitor:
             'dht22_success_rate': dht_success,
             'pi5_features': {
                 'high_performance': self.high_performance,
-                'parallel_reading': self.parallel_reading,
+                'parallel_reading': self.use_parallel_reading,
                 'error_recovery': self.error_recovery,
                 'lgpio_available': PI5_LGPIO_AVAILABLE
             }
@@ -463,7 +463,7 @@ def main():
     monitor = Pi5SensorMonitor(
         high_performance=True,
         error_recovery=True,
-        parallel_reading=True
+        use_parallel_reading=True
     )
     
     # Hardware-Check
