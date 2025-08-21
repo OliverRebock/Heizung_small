@@ -273,10 +273,53 @@ echo "💡 cd ~/sensor-monitor-pi5"
 echo "💡 source venv/bin/activate"
 echo "💡 python sensor_monitor.py"
 echo ""
-echo "🗄️ Optional: InfluxDB Integration hinzufügen:"
-echo "💡 wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_docker_influxdb.sh"
-echo "💡 chmod +x install_docker_influxdb.sh"
-echo "💡 ./install_docker_influxdb.sh"
+
+# Interaktive Docker Installation
+echo "🐳 Docker + InfluxDB + Grafana Installation"
+echo "==========================================="
+echo "Möchten Sie zusätzlich Docker mit InfluxDB und Grafana installieren?"
+echo "Dies ermöglicht:"
+echo "  � Professionelle Datenvisualisierung"
+echo "  �🗄️ Langzeit-Datenspeicherung"
+echo "  📈 Grafana Dashboards"
+echo "  📱 Web-basierte Überwachung"
+echo ""
+echo "⚠️  Hinweis: Benötigt ~2GB zusätzlichen Speicherplatz"
+echo ""
+
+read -p "Docker Stack installieren? (y/N): " -n 1 -r install_docker
+echo
+
+if [[ $install_docker =~ ^[Yy]$ ]]; then
+    echo ""
+    echo "🐳 Starte Docker + InfluxDB Installation..."
+    
+    # Prüfe ob install_docker_influxdb.sh existiert
+    if [ -f "install_docker_influxdb.sh" ]; then
+        echo "✅ Docker-Installations-Script gefunden"
+        chmod +x install_docker_influxdb.sh
+        ./install_docker_influxdb.sh
+    else
+        echo "📥 Lade Docker-Installations-Script herunter..."
+        if wget -q https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_docker_influxdb.sh; then
+            chmod +x install_docker_influxdb.sh
+            ./install_docker_influxdb.sh
+        else
+            echo "❌ Fehler beim Herunterladen des Docker-Scripts"
+            echo "💡 Manuelle Installation:"
+            echo "💡 wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_docker_influxdb.sh"
+            echo "💡 chmod +x install_docker_influxdb.sh"
+            echo "💡 ./install_docker_influxdb.sh"
+        fi
+    fi
+else
+    echo "⏭️  Docker Installation übersprungen"
+    echo ""
+    echo "🗄️ Docker später installieren:"
+    echo "💡 wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_docker_influxdb.sh"
+    echo "💡 chmod +x install_docker_influxdb.sh"
+    echo "💡 ./install_docker_influxdb.sh"
+fi
 echo ""
 
 # Pi 5 spezifischer Sensor-Check

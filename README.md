@@ -35,19 +35,35 @@ Ein professionelles IoT-Monitoring-System für Raspberry Pi 5 mit 6x DS18B20 Tem
 
 ## ⚡ Quick Start
 
+### 🚀 **Option 1: Standard-Installation (Sensoren only)**
 ```bash
 # Repository klonen
 git clone https://github.com/OliverRebock/Heizung_small.git
 cd Heizung_small
 
-# Automatische Installation
+# Basis-Installation (mit optionaler Docker-Auswahl)
 chmod +x install_sensors.sh
 ./install_sensors.sh
 
 # Nach Neustart testen
 sudo reboot
 cd ~/sensor-monitor-pi5
-    python sensor_monitor.py single
+python sensor_monitor.py single
+```
+
+### 🌟 **Option 2: Full-Stack Installation (Alles in einem)**
+```bash
+# Repository klonen
+git clone https://github.com/OliverRebock/Heizung_small.git
+cd Heizung_small
+
+# Komplette Installation: Sensoren + Docker + Grafana + Web-Dashboard
+chmod +x install_full_stack.sh
+./install_full_stack.sh
+
+# Nach Installation verfügbar:
+# 📊 Grafana: http://YOUR_PI_IP:3000
+# 🌐 Web-Dashboard: http://YOUR_PI_IP:5000
 ```
 
 ## 🐳 Docker Stack
@@ -154,14 +170,27 @@ sudo systemctl status pi5-sensor-monitoring
 
 ```
 Heizung_small/
-├── sensor_monitor.py           # Haupt-Sensor-Script
-├── sensor_influxdb.py          # InfluxDB Integration
-├── test_sensors_fixed.py       # Umfassende Tests
-├── install_sensors.sh          # Automatische Installation
-├── docker-compose.yml          # Docker Stack
-├── grafana_dashboard_*.json    # Grafana Dashboards
-├── requirements.txt            # Python Dependencies
-└── setup_autostart_*.sh        # Service-Setup
+├── sensor_monitor.py                    # Haupt-Sensor-Script
+├── sensor_influxdb.py                   # InfluxDB Integration
+├── individualized_sensors.py            # 🆕 Sensor-Individualisierung
+├── influxdb_individualized.py           # 🆕 InfluxDB mit Namen
+├── advanced_monitoring.py               # 🆕 Smart Monitoring & Alerts
+├── web_dashboard.py                     # 🆕 Live Web-Interface
+├── test_sensors_fixed.py                # Hardware Tests
+├── test_comprehensive.py                # 🆕 Pytest Test-Suite
+├── install_sensors.sh                   # Basis-Installation
+├── install_full_stack.sh                # 🆕 Complete Stack Installation
+├── install_docker_influxdb.sh           # Docker Installation
+├── backup_system.sh                     # 🆕 Backup & Recovery
+├── setup_individualized_sensors.sh      # 🆕 Sensor-Naming Setup
+├── docker-compose.yml                   # Docker Stack
+├── docker-compose-clean.yml             # 🆕 Optimized Docker
+├── grafana_dashboard_*.json             # Grafana Dashboards
+├── requirements.txt                     # 🆕 Python Dependencies
+├── config.ini                           # 🆕 Central Configuration
+├── .env                                 # 🆕 Environment Variables
+├── .github/workflows/ci.yml             # 🆕 CI/CD Pipeline
+└── setup_autostart_*.sh                 # Service-Setup
 ```
 
 ## 🤝 Beitragen
