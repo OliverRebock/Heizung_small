@@ -56,80 +56,14 @@ services:
     networks:
       - pi5-network
 
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: pi5-sensor-prometheus
-    restart: unless-stopped
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus:/etc/prometheus
-      - prometheus-data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
-    networks:
-      - pi5-network
-
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: pi5-node-exporter
-    restart: unless-stopped
-    ports:
-      - "9100:9100"
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.rootfs=/rootfs'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    networks:
-      - pi5-network
-
-  backup:
-    image: influxdb:2.7-alpine
-    container_name: pi5-backup-service
-    restart: "no"
-    volumes:
-      - influxdb-data:/var/lib/influxdb2:ro
-      - ./backups:/backups
-    environment:
-      - INFLUXDB_TOKEN=pi5-sensor-token-2024-super-secret
-      - INFLUXDB_ORG=Pi5SensorOrg
-    command: >
-      sh -c "
-        echo 'Backup Service bereit - manueller Start mit: docker compose run backup'
-        sleep 86400
-      "
-    networks:
-      - pi5-network
-
 volumes:
   influxdb-data:
     driver: local
   influxdb-config:
     driver: local
   grafana-data:
-volumes:
-  influxdb-data:
-    driver: local
-  influxdb-config:
-    driver: local
-  grafana-data:
-    driver: local
-  prometheus-data:
     driver: local
 
 networks:
   pi5-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16

@@ -1,0 +1,33 @@
+# Pi 5 optimierte Python-Abhängigkeiten für Sensor Monitor
+# Core Dependencies
+lgpio>=0.2.2.0
+gpiozero>=1.6.2
+adafruit-circuitpython-dht>=3.7.0
+board>=1.0
+
+# InfluxDB Integration
+influxdb-client>=1.40.0
+
+# Monitoring & Logging
+psutil>=5.9.0
+prometheus-client>=0.17.0
+
+# Configuration & Utils
+pyyaml>=6.0
+click>=8.1.0
+python-dotenv>=1.0.0
+
+# Development & Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Optional: Web Interface
+flask>=2.3.0
+flask-socketio>=5.3.0
+
+# Optional: Advanced Analytics
+numpy>=1.24.0
+pandas>=2.0.0
