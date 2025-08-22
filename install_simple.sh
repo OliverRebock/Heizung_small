@@ -44,6 +44,12 @@ else
     echo "   ✅ Docker bereits vorhanden"
 fi
 
+# User zur docker group hinzufügen (falls noch nicht)
+if ! groups $USER | grep -q docker; then
+    sudo usermod -aG docker $USER
+    echo "   ✅ User zur docker group hinzugefügt"
+fi
+
 # Docker starten (ohne enable - das macht Probleme)
 sudo systemctl start docker 2>/dev/null || true
 sleep 3
@@ -333,6 +339,12 @@ pip install influxdb-client configparser
 # DHT22 Packages - Pi 5 optimiert
 echo "🌡️ Installiere DHT22 Support für Pi 5..."
 pip install --upgrade setuptools
+
+# Pi 5 braucht lgpio!
+echo "📡 Installiere Pi 5 GPIO Support..."
+sudo apt-get install -y python3-lgpio lgpio
+pip install lgpio
+
 pip install adafruit-blinka
 pip install --force-reinstall adafruit-circuitpython-dht
 
@@ -340,6 +352,8 @@ pip install --force-reinstall adafruit-circuitpython-dht
 echo "🔧 Teste DHT22 Installation..."
 python3 -c "
 try:
+    import lgpio
+    print('✅ lgpio verfügbar')
     import adafruit_dht
     import board
     print('✅ DHT22 Packages erfolgreich installiert')
@@ -364,7 +378,7 @@ Type=simple
 User=pi
 WorkingDirectory=$PROJECT_DIR
 ExecStartPre=/bin/sleep 20
-ExecStartPre=/usr/bin/docker compose up -d
+ExecStartPre=/usr/bin/sudo /usr/bin/docker compose up -d
 ExecStart=$PROJECT_DIR/venv/bin/python sensor_reader.py
 Restart=always
 RestartSec=30
@@ -382,7 +396,13 @@ sudo systemctl enable pi5-sensors.service
 # =============================================================================
 echo "🚀 Starte Docker Container..."
 if command -v docker &> /dev/null && sudo systemctl is-active --quiet docker; then
-    docker compose up -d
+    # Prüfe ob User in docker group ist, sonst sudo verwenden
+    if groups $USER | grep -q docker; then
+        docker compose up -d
+    else
+        echo "   ⚠️ User noch nicht in docker group - verwende sudo"
+        sudo docker compose up -d
+    fi
     echo "   ✅ Container gestartet"
     
     # Warte auf InfluxDB
