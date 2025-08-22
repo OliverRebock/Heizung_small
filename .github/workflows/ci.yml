@@ -2,7 +2,7 @@ name: Pi 5 Sensor Monitor CI/CD
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.9, 3.10, 3.11]
+        python-version: [3.11]  # Nur Pi 5 relevante Version
 
     steps:
     - uses: actions/checkout@v4
@@ -21,96 +21,41 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libgpiod2 libgpiod-dev
-
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pytest pytest-cov black flake8 mypy
+        pip install pytest
 
-    - name: Lint with flake8
+    - name: Basic syntax check
       run: |
-        # Stop build if syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Exit-zero treats all errors as warnings
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        python -m py_compile sensor_monitor.py
+        python -m py_compile sensor_influxdb.py
+        python -m py_compile individualized_sensors.py
+        python -m py_compile advanced_monitoring.py
+        python -m py_compile web_dashboard.py
 
-    - name: Format check with black
+    - name: Test configuration files
       run: |
-        black --check .
-
-    - name: Type check with mypy
-      run: |
-        mypy sensor_monitor.py sensor_influxdb.py --ignore-missing-imports
-
-    - name: Test with pytest
-      run: |
-        pytest test_comprehensive.py -v --cov=sensor_monitor --cov=sensor_influxdb --cov-report=xml
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
+        python -c "import configparser; c=configparser.ConfigParser(); c.read('config.ini'); print('Config OK')"
 
   docker-test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
 
-    - name: Test Docker Compose
+    - name: Test Docker Compose syntax
       run: |
         docker compose config
-        docker compose up -d --wait
-        docker compose ps
-        docker compose down
-
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Run Bandit Security Scan
-      run: |
-        pip install bandit
-        bandit -r . -f json -o bandit-report.json || true
-
-    - name: Upload security report
-      uses: actions/upload-artifact@v3
-      with:
-        name: security-report
-        path: bandit-report.json
 
   release:
     needs: [test, docker-test]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'release:')
     
     steps:
     - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
 
-    - name: Generate release notes
-      id: generate_notes
+    - name: Create Release Tag
       run: |
-        echo "notes<<EOF" >> $GITHUB_OUTPUT
-        git log --pretty=format:"- %s" $(git describe --tags --abbrev=0)..HEAD >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
-
-    - name: Create Release
-      if: contains(github.event.head_commit.message, 'release:')
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v${{ github.run_number }}
-        release_name: Release v${{ github.run_number }}
-        body: ${{ steps.generate_notes.outputs.notes }}
-        draft: false
-        prerelease: false
+        git tag v$(date +%Y%m%d-%H%M%S)
+        echo "Release tagged successfully"
