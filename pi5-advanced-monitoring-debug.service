@@ -1,0 +1,19 @@
+[Unit]
+Description=Pi5 Advanced Monitoring Debug Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/sensor-monitor-pi5
+Environment=PATH=/home/pi/sensor-monitor-pi5/venv/bin
+ExecStart=/home/pi/sensor-monitor-pi5/venv/bin/python /home/pi/sensor-monitor-pi5/advanced_monitoring_debug.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

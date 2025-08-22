@@ -12,8 +12,8 @@ import psutil
 import configparser
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
-from email.mime.text import MimeText
-from email.mime.multipart import MimeMultipart
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from pathlib import Path
 
 # Prometheus Metrics (optional)
@@ -80,7 +80,7 @@ class AlertManager:
         try:
             subject = f"🚨 Pi5 Sensor Alert [{priority.upper()}] - {alert_type}"
             
-            msg = MimeMultipart()
+            msg = MIMEMultipart()
             msg['From'] = self.smtp_user
             msg['Subject'] = subject
             
@@ -98,7 +98,7 @@ class AlertManager:
             System: Raspberry Pi 5 Sensor Monitor
             """
             
-            msg.attach(MimeText(body, 'plain'))
+            msg.attach(MIMEText(body, 'plain'))
             
             server = smtplib.SMTP(self.smtp_server, self.smtp_port)
             server.starttls()
