@@ -1,22 +1,23 @@
 #!/bin/bash
 # =============================================================================
-# MINIMAL INSTALLATION - Pi 5 Sensor Monitor
+# MINIMAL INSTALLATION V2 - Pi 5 Sensor Monitor
 # =============================================================================
-# 🎯 Fokus: Docker + InfluxDB + Individualisierte Sensoren + Grafana (no login)
+# 🎯 Fokus: Docker + InfluxDB + 9 Sensoren + Grafana (no login)
 # 
 # Was wird installiert:
 # - Docker + Docker Compose
 # - InfluxDB Container 
 # - Grafana Container (ohne Login)
-# - Python Sensor Script mit individualisierten Namen
+# - Python Sensor Script mit allen 9 Sensoren (8x DS18B20 + 1x DHT22)
 # - Autostart Service
 # =============================================================================
 
-echo "🚀 Pi 5 Sensor Monitor - MINIMAL INSTALLATION"
-echo "=============================================="
+echo "🚀 Pi 5 Sensor Monitor - MINIMAL INSTALLATION V2"
+echo "================================================="
 echo ""
 echo "🎯 Installiert wird:"
 echo "   🐳 Docker + InfluxDB + Grafana"
+echo "   🌡️  9 Sensoren (8x DS18B20 + 1x DHT22)"
 echo "   🏷️  Individualisierte Sensornamen"
 echo "   🔓 Grafana ohne Login"
 echo "   ⚡ Ein Service für alles"
@@ -52,12 +53,22 @@ mkdir -p "$PROJECT_DIR"
 cd "$PROJECT_DIR"
 
 # =============================================================================
-# 4. SENSOR KONFIGURATION KOPIEREN
+# 4. VERBESSERTE SCRIPTS KOPIEREN
 # =============================================================================
-echo "📋 Erstelle Sensor-Konfiguration..."
+echo "🐍 Kopiere verbesserte Sensor-Scripts (9 Sensoren)..."
 
-# config.ini mit individualisierten Namen
-cat > config.ini << 'EOF'
+# Prüfe ob wir im Git-Repo sind
+if [ -f "../sensor_monitor_minimal.py" ]; then
+    echo "   📋 Kopiere aus Git-Repository..."
+    cp ../sensor_monitor_minimal.py sensor_monitor.py
+    cp ../test_all_sensors.py .
+    cp ../config_minimal.ini config.ini
+    cp ../docker-compose-minimal.yml docker-compose.yml
+else
+    echo "   ⚠️  Git-Repository nicht gefunden, erstelle Standard-Dateien..."
+    
+    # Fallback: Standard config.ini erstellen
+    cat > config.ini << 'EOF'
 [database]
 host = localhost
 port = 8086
@@ -81,173 +92,8 @@ ds18b20_8 = Pufferspeicher Oben
 dht22 = Raumklima Heizraum
 EOF
 
-# =============================================================================
-# 5. HAUPTSENSOR SCRIPT ERSTELLEN
-# =============================================================================
-echo "🐍 Erstelle Sensor-Script..."
-
-cat > sensor_monitor.py << 'EOF'
-#!/usr/bin/env python3
-"""
-🌡️ Pi 5 Sensor Monitor - MINIMAL VERSION
-Fokus: InfluxDB + Individualisierte Sensoren
-"""
-
-import os
-import sys
-import time
-import glob
-import lgpio
-import configparser
-from datetime import datetime
-from influxdb_client import InfluxDBClient, Point
-from influxdb_client.client.write_api import SYNCHRONOUS
-
-class MinimalSensorMonitor:
-    def __init__(self):
-        self.config = configparser.ConfigParser()
-        self.config.read('config.ini')
-        self.setup_influxdb()
-        self.sensor_labels = dict(self.config.items('labels'))
-        
-    def setup_influxdb(self):
-        """InfluxDB Verbindung"""
-        self.influx_client = InfluxDBClient(
-            url=f"http://{self.config['database']['host']}:{self.config['database']['port']}",
-            token=self.config['database']['token'],
-            org=self.config['database']['org']
-        )
-        self.write_api = self.influx_client.write_api(write_options=SYNCHRONOUS)
-        
-    def get_ds18b20_sensors(self):
-        """DS18B20 Sensoren finden"""
-        devices = glob.glob('/sys/bus/w1/devices/28-*')
-        sensors = {}
-        
-        for i, device in enumerate(devices[:8], 1):
-            sensor_id = f"ds18b20_{i}"
-            label = self.sensor_labels.get(sensor_id, f"DS18B20_{i}")
-            sensors[device] = {"id": sensor_id, "label": label}
-            
-        return sensors
-        
-    def read_ds18b20(self, device_path):
-        """DS18B20 Temperatur lesen"""
-        try:
-            with open(f"{device_path}/w1_slave", 'r') as f:
-                data = f.read()
-            if 'YES' in data:
-                temp_pos = data.find('t=') + 2
-                temp_c = float(data[temp_pos:]) / 1000.0
-                return round(temp_c, 2)
-        except:
-            return None
-            
-    def read_dht22(self):
-        """DHT22 lesen"""
-        try:
-            import adafruit_dht
-            dht = adafruit_dht.DHT22(int(self.config['sensors']['dht22_gpio']))
-            temp = dht.temperature
-            humidity = dht.humidity
-            return round(temp, 2) if temp else None, round(humidity, 2) if humidity else None
-        except:
-            return None, None
-            
-    def read_all_sensors(self):
-        """Alle Sensoren auslesen"""
-        measurements = []
-        timestamp = datetime.utcnow()
-        
-        # DS18B20 Sensoren
-        ds18b20_sensors = self.get_ds18b20_sensors()
-        for device_path, sensor_info in ds18b20_sensors.items():
-            temp = self.read_ds18b20(device_path)
-            if temp is not None:
-                point = Point("temperature") \
-                    .tag("sensor", sensor_info["id"]) \
-                    .tag("label", sensor_info["label"]) \
-                    .tag("type", "DS18B20") \
-                    .field("value", temp) \
-                    .time(timestamp)
-                measurements.append(point)
-                print(f"📏 {sensor_info['label']}: {temp}°C")
-                
-        # DHT22 Sensor
-        temp, humidity = self.read_dht22()
-        dht_label = self.sensor_labels.get('dht22', 'DHT22')
-        
-        if temp is not None:
-            point = Point("temperature") \
-                .tag("sensor", "dht22") \
-                .tag("label", dht_label) \
-                .tag("type", "DHT22") \
-                .field("value", temp) \
-                .time(timestamp)
-            measurements.append(point)
-            print(f"📏 {dht_label} Temp: {temp}°C")
-            
-        if humidity is not None:
-            point = Point("humidity") \
-                .tag("sensor", "dht22") \
-                .tag("label", dht_label) \
-                .tag("type", "DHT22") \
-                .field("value", humidity) \
-                .time(timestamp)
-            measurements.append(point)
-            print(f"📏 {dht_label} Humidity: {humidity}%")
-            
-        return measurements
-        
-    def write_to_influxdb(self, measurements):
-        """Daten zu InfluxDB schreiben"""
-        try:
-            self.write_api.write(
-                bucket=self.config['database']['bucket'],
-                org=self.config['database']['org'],
-                record=measurements
-            )
-            print(f"✅ {len(measurements)} Messungen gespeichert")
-        except Exception as e:
-            print(f"❌ InfluxDB Fehler: {e}")
-            
-    def monitor_continuous(self, interval=30):
-        """Kontinuierliches Monitoring"""
-        print(f"🔄 Starte kontinuierliches Monitoring (alle {interval}s)")
-        print("📊 Individualisierte Sensornamen aktiv!")
-        print("-" * 50)
-        
-        while True:
-            try:
-                measurements = self.read_all_sensors()
-                if measurements:
-                    self.write_to_influxdb(measurements)
-                print("-" * 50)
-                time.sleep(interval)
-            except KeyboardInterrupt:
-                print("\n🛑 Monitoring gestoppt")
-                break
-            except Exception as e:
-                print(f"❌ Fehler: {e}")
-                time.sleep(5)
-
-if __name__ == "__main__":
-    monitor = MinimalSensorMonitor()
-    
-    if len(sys.argv) > 1 and sys.argv[1] == "test":
-        print("🧪 Teste Sensoren...")
-        measurements = monitor.read_all_sensors()
-        print(f"✅ {len(measurements)} Sensoren gefunden")
-    else:
-        monitor.monitor_continuous()
-EOF
-
-# =============================================================================
-# 6. DOCKER COMPOSE ERSTELLEN (MINIMAL)
-# =============================================================================
-echo "🐳 Erstelle Docker Compose..."
-
-cat > docker-compose.yml << 'EOF'
+    # Fallback: Docker Compose erstellen
+    cat > docker-compose.yml << 'EOF'
 services:
   influxdb:
     image: influxdb:2.7
@@ -272,11 +118,11 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=pi5sensors2024
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=true
       - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_SECURITY_ADMIN_PASSWORD=pi5sensors2024
     volumes:
       - grafana-data:/var/lib/grafana
     depends_on:
@@ -287,10 +133,16 @@ volumes:
   grafana-data:
 EOF
 
+    echo "   ❌ WARNUNG: Standard-Script verwendet, nicht das verbesserte!"
+    echo "   💡 Für 9-Sensor Support: git clone ausführen vor Installation"
+fi
+
+echo "✅ Scripts bereit"
+
 # =============================================================================
-# 7. PYTHON VIRTUAL ENVIRONMENT ERSTELLEN (WICHTIG FÜR DHT22!)
+# 5. PYTHON VIRTUAL ENVIRONMENT ERSTELLEN (WICHTIG FÜR DHT22!)
 # =============================================================================
-echo "🐍 Erstelle Python Virtual Environment (für DHT22 Sensor)..."
+echo "🐍 Erstelle Python Virtual Environment (für 9 Sensoren)..."
 sudo apt install -y python3-pip python3-venv python3-dev
 
 # Virtual Environment erstellen
@@ -305,13 +157,13 @@ pip install influxdb-client lgpio adafruit-circuitpython-dht adafruit-blinka con
 echo "✅ Python Virtual Environment mit Dependencies erstellt"
 
 # =============================================================================
-# 8. SYSTEMD SERVICE ERSTELLEN (MIT VENV!)
+# 6. SYSTEMD SERVICE ERSTELLEN (MIT VENV!)
 # =============================================================================
 echo "⚙️ Erstelle Systemd Service (mit Python venv)..."
 
 sudo tee /etc/systemd/system/pi5-sensor-minimal.service > /dev/null << EOF
 [Unit]
-Description=Pi 5 Sensor Monitor (Minimal with venv)
+Description=Pi 5 Sensor Monitor (9 Sensors with venv)
 After=docker.service network.target
 Requires=docker.service
 
@@ -337,7 +189,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable pi5-sensor-minimal.service
 
 # =============================================================================
-# 9. DOCKER CONTAINER STARTEN
+# 7. DOCKER CONTAINER STARTEN
 # =============================================================================
 echo "🚀 Starte Docker Container..."
 docker compose up -d
@@ -347,17 +199,28 @@ echo "⏳ Warte auf Container..."
 sleep 30
 
 # =============================================================================
-# 10. TEST AUSFÜHREN (MIT VENV)
+# 8. TEST AUSFÜHREN (MIT VENV)
 # =============================================================================
-echo "🧪 Teste Installation (mit venv)..."
+echo "🧪 Teste Installation (9 Sensoren)..."
 
 # Test mit venv Python ausführen
-echo "🔬 Teste Sensor Script mit venv..."
+echo "🔬 Teste alle 9 Sensoren..."
 source venv/bin/activate
-python sensor_monitor.py test
+
+# Prüfe ob verbessertes Test-Script verfügbar ist
+if [ -f "test_all_sensors.py" ]; then
+    python test_all_sensors.py
+else
+    echo "   ⚠️  Verwende Standard-Test..."
+    if [ -f "sensor_monitor.py" ]; then
+        python sensor_monitor.py test
+    else
+        echo "   ❌ Kein Test-Script gefunden!"
+    fi
+fi
 
 # =============================================================================
-# 11. FERTIG!
+# 9. FERTIG!
 # =============================================================================
 echo ""
 echo "🎉 INSTALLATION ABGESCHLOSSEN!"
@@ -365,9 +228,10 @@ echo "=============================="
 echo ""
 echo "✅ Was wurde installiert:"
 echo "   🐳 Docker + InfluxDB + Grafana"
+echo "   🌡️  Support für 9 Sensoren (8x DS18B20 + 1x DHT22)"
 echo "   🏷️  Individualisierte Sensornamen"
 echo "   🔓 Grafana OHNE Login"
-echo "   ⚙️  Systemd Service"
+echo "   ⚙️  Systemd Service mit venv"
 echo ""
 echo "🌐 Verfügbare Services:"
 echo "   📊 Grafana: http://$(hostname -I | awk '{print $1}'):3000"
@@ -377,7 +241,7 @@ echo "🔧 Wichtige Befehle:"
 echo "   Service starten: sudo systemctl start pi5-sensor-minimal"
 echo "   Service stoppen: sudo systemctl stop pi5-sensor-minimal"
 echo "   Logs anzeigen:   sudo journalctl -u pi5-sensor-minimal -f"
-echo "   Sensoren testen: cd $PROJECT_DIR && python3 sensor_monitor.py test"
+echo "   9 Sensoren test: cd $PROJECT_DIR && source venv/bin/activate && python test_all_sensors.py"
 echo ""
 echo "⚠️  NEUSTART ERFORDERLICH für GPIO!"
 read -p "🔄 Jetzt neu starten? (ja/nein): " reboot_now
@@ -386,4 +250,4 @@ if [ "$reboot_now" = "ja" ]; then
 fi
 
 echo "🚀 Projekt bereit! Nach Neustart startet alles automatisch."
-EOF
+echo "🎯 Erwartung: 9 Sensoren = 10 Messwerte (8x DS18B20 + DHT22 Temp + DHT22 Humidity)"
