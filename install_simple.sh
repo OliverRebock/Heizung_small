@@ -115,20 +115,27 @@ class Pi5SensorReader:
         return sensors
         
     def read_dht22(self):
-        """Lese DHT22 Sensor"""
+        """Lese DHT22 Sensor - Pi 5 optimiert"""
         try:
             import adafruit_dht
             import board
             
-            dht = adafruit_dht.DHT22(board.D18)
+            # Pi 5 spezifische Initialisierung 
+            dht = adafruit_dht.DHT22(board.D18, use_pulseio=False)
             
-            # 3 Versuche
-            for attempt in range(3):
+            # 5 Versuche mit längeren Pausen für Pi 5
+            for attempt in range(5):
                 try:
+                    # Pi 5 braucht mehr Zeit zwischen Lesungen
+                    if attempt > 0:
+                        time.sleep(3)
+                    
                     temp = dht.temperature
                     humidity = dht.humidity
                     
-                    if temp is not None and humidity is not None:
+                    # Validierung der Werte
+                    if (temp is not None and humidity is not None and 
+                        -40 <= temp <= 80 and 0 <= humidity <= 100):
                         name = self.config.get('labels', 'dht22', fallback='Raumklima')
                         print(f"   DHT22: {temp:.1f}°C, {humidity:.1f}% ({name})")
                         return {
@@ -137,11 +144,21 @@ class Pi5SensorReader:
                             'humidity': humidity,
                             'sensor_id': 'dht22'
                         }
-                except Exception:
-                    if attempt < 2:
-                        time.sleep(2)
+                    else:
+                        print(f"   ⚠️  DHT22: Ungültige Werte (T:{temp}, H:{humidity})")
                         
-            print("   ⚠️  DHT22: Keine Daten nach 3 Versuchen")
+                except RuntimeError as e:
+                    # Pi 5 RuntimeError behandeln
+                    if "Checksum did not validate" in str(e):
+                        print(f"   ⚠️  DHT22: Prüfsummen-Fehler (Versuch {attempt+1}/5)")
+                    elif "timed out" in str(e):
+                        print(f"   ⚠️  DHT22: Timeout (Versuch {attempt+1}/5)")
+                    else:
+                        print(f"   ⚠️  DHT22: {e} (Versuch {attempt+1}/5)")
+                except Exception as e:
+                    print(f"   ⚠️  DHT22: Unerwarteter Fehler: {e}")
+                        
+            print("   ❌ DHT22: Keine gültigen Daten nach 5 Versuchen")
             
         except ImportError:
             print("   ❌ DHT22: adafruit-circuitpython-dht nicht installiert")
@@ -307,9 +324,30 @@ echo "🐍 Erstelle Python Virtual Environment..."
 python3 -m venv venv
 source venv/bin/activate
 
-echo "📦 Installiere Python Packages..."
+echo "📦 Installiere Python Packages für Pi 5..."
 pip install --upgrade pip
-pip install influxdb-client adafruit-circuitpython-dht adafruit-blinka configparser
+
+# Pi 5 spezifische Installation
+pip install influxdb-client configparser
+
+# DHT22 Packages - Pi 5 optimiert
+echo "🌡️ Installiere DHT22 Support für Pi 5..."
+pip install --upgrade setuptools
+pip install adafruit-blinka
+pip install --force-reinstall adafruit-circuitpython-dht
+
+# Teste DHT22 Installation
+echo "🔧 Teste DHT22 Installation..."
+python3 -c "
+try:
+    import adafruit_dht
+    import board
+    print('✅ DHT22 Packages erfolgreich installiert')
+except ImportError as e:
+    print(f'❌ DHT22 Import Fehler: {e}')
+except Exception as e:
+    print(f'⚠️ DHT22 Test Warnung: {e}')
+"
 
 # =============================================================================
 # 8. SYSTEMD SERVICE
