@@ -146,92 +146,63 @@ fi
 
 # Stelle sicher dass Docker läuft (falls Installation erfolgreich war)
 if [ "${DOCKER_INSTALLATION_FAILED:-false}" != "true" ]; then
-    echo "⏳ Überprüfe Docker Service..."
-    sudo systemctl enable docker || true
-
-    if ! sudo systemctl is-active --quiet docker; then
-        sudo systemctl start docker || true
-        sleep 5
-    fi
-
+    echo "⏳ Überprüfe Docker Service Status..."
+    
+    # Prüfe aktuellen Docker Status ohne enable (das löst den Fehler aus!)
     if sudo systemctl is-active --quiet docker; then
-        echo "✅ Docker ist bereit"
+        echo "✅ Docker läuft bereits"
         DOCKER_READY=true
     else
-        echo "⚠️  Docker läuft nicht, Installation wird ohne Docker fortgesetzt"
+        echo "🔄 Docker läuft nicht, versuche Start..."
+        
+        # Versuche Docker zu starten ohne systemctl enable
+        if sudo systemctl start docker 2>/dev/null; then
+            sleep 5
+            if sudo systemctl is-active --quiet docker; then
+                echo "✅ Docker erfolgreich gestartet"
+                DOCKER_READY=true
+            else
+                echo "❌ Docker start fehlgeschlagen"
+                DOCKER_READY=false
+            fi
+        else
+            echo "❌ Docker kann nicht gestartet werden"
+            DOCKER_READY=false
+        fi
+    fi
+    
+    # Falls Docker immer noch nicht läuft, markiere als fehlgeschlagen
+    if [ "${DOCKER_READY:-false}" != "true" ]; then
+        echo "⚠️  Docker ist nicht verfügbar - Installation ohne Docker fortsetzen"
+        DOCKER_INSTALLATION_FAILED=true
         DOCKER_READY=false
     fi
 else
-    echo "⚠️  Docker-Installation übersprungen"
+    echo "⚠️  Docker-Installation wurde übersprungen"
     DOCKER_READY=false
 fi
 
 # =============================================================================
-# 3. DOCKER OPTIMIERUNG (NUR WENN DOCKER LÄUFT)
+# 3. DOCKER OPTIMIERUNG (NUR WENN DOCKER SICHER LÄUFT)
 # =============================================================================
 if [ "${DOCKER_READY:-false}" = "true" ]; then
     echo "⚙️ Optimiere Docker für Raspberry Pi 5..."
 
-    # Erstelle optimierte Docker daemon Konfiguration
-    sudo mkdir -p /etc/docker
-    sudo tee /etc/docker/daemon.json > /dev/null << 'EOF'
-{
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "10m",
-    "max-file": "3"
-  },
-  "storage-driver": "overlay2",
-  "storage-opts": [
-    "overlay2.override_kernel_check=true"
-  ],
-  "default-ulimits": {
-    "nofile": {
-      "Name": "nofile",
-      "Hard": 64000,
-      "Soft": 64000
-    }
-  }
-}
-EOF
-
-    # Docker neustarten mit neuer Konfiguration
-    echo "🔄 Neustarte Docker mit Optimierungen..."
-    sudo systemctl restart docker
-    
-    # Warte und prüfe ob Docker erfolgreich neugestartet wurde
-    sleep 10
-    if ! sudo systemctl is-active --quiet docker; then
-        echo "⚠️  Docker Neustart fehlgeschlagen, verwende Standard-Konfiguration..."
-        sudo rm -f /etc/docker/daemon.json
-        sudo systemctl restart docker
-        sleep 5
-        
-        if sudo systemctl is-active --quiet docker; then
-            echo "✅ Docker mit Standard-Konfiguration gestartet"
-            DOCKER_READY=true
-        else
-            echo "❌ Docker konnte nicht gestartet werden"
-            DOCKER_READY=false
-        fi
-    else
-        echo "✅ Docker erfolgreich optimiert"
-        DOCKER_READY=true
-    fi
+    # ÜBERSPRINGEN: Docker daemon.json Optimierung bei Problemen
+    echo "⚠️  Docker-Optimierung übersprungen (um Stabilitätsprobleme zu vermeiden)"
+    echo "   💡 Docker läuft mit Standard-Konfiguration"
 
     # 📁 PERSISTENTE DATENVERZEICHNISSE ERSTELLEN (nur wenn Docker läuft)
-    if [ "${DOCKER_READY:-false}" = "true" ]; then
-        echo "📁 Erstelle persistente Datenverzeichnisse..."
-        sudo mkdir -p /opt/docker-data/{influxdb,grafana}
+    echo "📁 Erstelle persistente Datenverzeichnisse..."
+    sudo mkdir -p /opt/docker-data/{influxdb,grafana}
 
-        # Setze Berechtigungen für Grafana (ID 472) und InfluxDB (ID 1000)
-        echo "🔧 Setze Container-Berechtigungen..."
-        sudo chown -R 472:472 /opt/docker-data/grafana 2>/dev/null || sudo chown -R 1000:1000 /opt/docker-data/grafana
-        sudo chown -R 1000:1000 /opt/docker-data/influxdb
-        sudo chmod 755 /opt/docker-data/{influxdb,grafana}
+    # Setze Berechtigungen für Grafana (ID 472) und InfluxDB (ID 1000)
+    echo "🔧 Setze Container-Berechtigungen..."
+    sudo chown -R 472:472 /opt/docker-data/grafana 2>/dev/null || sudo chown -R 1000:1000 /opt/docker-data/grafana
+    sudo chown -R 1000:1000 /opt/docker-data/influxdb
+    sudo chmod 755 /opt/docker-data/{influxdb,grafana}
 
-        echo "✅ Docker Optimierung abgeschlossen"
-    fi
+    echo "✅ Docker Basis-Konfiguration abgeschlossen"
 else
     echo "⚠️  Docker-Optimierung übersprungen (Docker nicht verfügbar)"
 fi
