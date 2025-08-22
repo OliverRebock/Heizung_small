@@ -288,27 +288,30 @@ volumes:
 EOF
 
 # =============================================================================
-# 7. PYTHON DEPENDENCIES INSTALLIEREN
+# 7. PYTHON VIRTUAL ENVIRONMENT ERSTELLEN (WICHTIG FÜR DHT22!)
 # =============================================================================
-echo "🐍 Installiere Python Dependencies..."
+echo "🐍 Erstelle Python Virtual Environment (für DHT22 Sensor)..."
 sudo apt install -y python3-pip python3-venv python3-dev
 
-# System-weite Installation für alle User
-sudo pip3 install influxdb-client lgpio adafruit-circuitpython-dht configparser
+# Virtual Environment erstellen
+python3 -m venv venv
+source venv/bin/activate
 
-# Zusätzlich für aktuellen User (falls sudo-Installation nicht funktioniert)
-pip3 install --user influxdb-client lgpio adafruit-circuitpython-dht configparser
+# Dependencies in venv installieren
+echo "📦 Installiere Dependencies in venv..."
+pip install --upgrade pip
+pip install influxdb-client lgpio adafruit-circuitpython-dht configparser
 
-echo "✅ Python Dependencies installiert"
+echo "✅ Python Virtual Environment mit Dependencies erstellt"
 
 # =============================================================================
-# 8. SYSTEMD SERVICE ERSTELLEN
+# 8. SYSTEMD SERVICE ERSTELLEN (MIT VENV!)
 # =============================================================================
-echo "⚙️ Erstelle Systemd Service..."
+echo "⚙️ Erstelle Systemd Service (mit Python venv)..."
 
 sudo tee /etc/systemd/system/pi5-sensor-minimal.service > /dev/null << EOF
 [Unit]
-Description=Pi 5 Sensor Monitor (Minimal)
+Description=Pi 5 Sensor Monitor (Minimal with venv)
 After=docker.service network.target
 Requires=docker.service
 
@@ -317,11 +320,9 @@ Type=simple
 User=pi
 Group=pi
 WorkingDirectory=$PROJECT_DIR
-Environment=PATH=/usr/local/bin:/usr/bin:/bin:/home/pi/.local/bin
-Environment=PYTHONPATH=/usr/local/lib/python3.11/site-packages:/home/pi/.local/lib/python3.11/site-packages
 ExecStartPre=/bin/sleep 30
 ExecStartPre=/usr/bin/docker compose up -d
-ExecStart=/usr/bin/python3 sensor_monitor.py
+ExecStart=$PROJECT_DIR/venv/bin/python sensor_monitor.py
 Restart=always
 RestartSec=30
 StandardOutput=journal
@@ -346,27 +347,14 @@ echo "⏳ Warte auf Container..."
 sleep 30
 
 # =============================================================================
-# 10. TEST AUSFÜHREN
+# 10. TEST AUSFÜHREN (MIT VENV)
 # =============================================================================
-echo "🧪 Teste Installation..."
+echo "🧪 Teste Installation (mit venv)..."
 
-# Prüfe ob Python Module verfügbar sind
-echo "🔍 Prüfe Python Dependencies..."
-python3 -c "import influxdb_client; print('✅ influxdb_client OK')" || {
-    echo "❌ influxdb_client fehlt - installiere manuell..."
-    sudo pip3 install influxdb-client
-    pip3 install --user influxdb-client
-}
-
-python3 -c "import lgpio; print('✅ lgpio OK')" || {
-    echo "❌ lgpio fehlt - installiere manuell..."
-    sudo pip3 install lgpio
-    pip3 install --user lgpio
-}
-
-# Test ausführen
-echo "🔬 Teste Sensor Script..."
-python3 sensor_monitor.py test
+# Test mit venv Python ausführen
+echo "🔬 Teste Sensor Script mit venv..."
+source venv/bin/activate
+python sensor_monitor.py test
 
 # =============================================================================
 # 11. FERTIG!

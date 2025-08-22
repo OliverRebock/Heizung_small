@@ -1,38 +1,35 @@
 #!/bin/bash
 # =============================================================================
-# SERVICE FIX MINIMAL - Repariert pi5-sensor-minimal Service 
+# SERVICE FIX MINIMAL - Mit Python venv (WICHTIG für DHT22!)
 # =============================================================================
 
-echo "🔧 SERVICE FIX - Repariere pi5-sensor-minimal Service"
-echo "===================================================="
+echo "🔧 SERVICE FIX - Mit Python venv für DHT22 Sensor"
+echo "================================================="
 
 # Service stoppen
 echo "🛑 Stoppe Service..."
 sudo systemctl stop pi5-sensor-minimal.service 2>/dev/null || true
 
-# Dependencies nochmals installieren (robust)
-echo "🐍 Installiere Python Dependencies (robust)..."
-sudo apt update
-sudo apt install -y python3-pip python3-dev
+# Ins Projektverzeichnis wechseln
+cd /home/pi/sensor-monitor
 
-# Mehrere Installationsmethoden
-echo "📦 Installiere influxdb-client..."
-sudo pip3 install --break-system-packages influxdb-client 2>/dev/null || sudo pip3 install influxdb-client
-pip3 install --user influxdb-client
+# Python venv erstellen falls nicht vorhanden
+echo "� Erstelle/Prüfe Python Virtual Environment..."
+if [ ! -d "venv" ]; then
+    python3 -m venv venv
+fi
 
-echo "📦 Installiere lgpio..."
-sudo pip3 install --break-system-packages lgpio 2>/dev/null || sudo pip3 install lgpio
-pip3 install --user lgpio
+# venv aktivieren und Dependencies installieren
+echo "📦 Installiere Dependencies in venv..."
+source venv/bin/activate
+pip install --upgrade pip
+pip install influxdb-client lgpio adafruit-circuitpython-dht configparser
 
-echo "📦 Installiere DHT22 Library..."
-sudo pip3 install --break-system-packages adafruit-circuitpython-dht 2>/dev/null || sudo pip3 install adafruit-circuitpython-dht
-pip3 install --user adafruit-circuitpython-dht
-
-# Korrigierten Service erstellen
-echo "⚙️ Erstelle korrigierten Service..."
+# Korrigierten Service erstellen (mit venv!)
+echo "⚙️ Erstelle korrigierten Service (mit venv)..."
 sudo tee /etc/systemd/system/pi5-sensor-minimal.service > /dev/null << 'EOF'
 [Unit]
-Description=Pi 5 Sensor Monitor (Minimal)
+Description=Pi 5 Sensor Monitor (Minimal with venv)
 After=docker.service network.target
 Requires=docker.service
 
@@ -41,11 +38,9 @@ Type=simple
 User=pi
 Group=pi
 WorkingDirectory=/home/pi/sensor-monitor
-Environment=PATH=/usr/local/bin:/usr/bin:/bin:/home/pi/.local/bin
-Environment=PYTHONPATH=/usr/local/lib/python3.11/site-packages:/home/pi/.local/lib/python3.11/site-packages
 ExecStartPre=/bin/sleep 30
 ExecStartPre=/usr/bin/docker compose up -d
-ExecStart=/usr/bin/python3 sensor_monitor.py
+ExecStart=/home/pi/sensor-monitor/venv/bin/python sensor_monitor.py
 Restart=always
 RestartSec=30
 StandardOutput=journal
@@ -60,19 +55,19 @@ echo "🔄 Lade Service neu..."
 sudo systemctl daemon-reload
 sudo systemctl enable pi5-sensor-minimal.service
 
-# Test der Python Module
-echo "🧪 Teste Python Module..."
-cd /home/pi/sensor-monitor
+# Test der Python Module (in venv)
+echo "🧪 Teste Python Module in venv..."
+source venv/bin/activate
 
 echo ""
 echo "📦 Teste Module:"
-python3 -c "import influxdb_client; print('✅ influxdb_client OK')" || echo "❌ influxdb_client FEHLT"
-python3 -c "import lgpio; print('✅ lgpio OK')" || echo "❌ lgpio FEHLT"
-python3 -c "import configparser; print('✅ configparser OK')" || echo "❌ configparser FEHLT"
+python -c "import influxdb_client; print('✅ influxdb_client OK')" || echo "❌ influxdb_client FEHLT"
+python -c "import lgpio; print('✅ lgpio OK')" || echo "❌ lgpio FEHLT"
+python -c "import configparser; print('✅ configparser OK')" || echo "❌ configparser FEHLT"
 
 echo ""
 echo "🚀 Teste Sensor Script..."
-python3 sensor_monitor.py test
+python sensor_monitor.py test
 
 echo ""
 echo "🔄 Starte Service..."
@@ -83,7 +78,7 @@ echo "📊 Service Status:"
 sudo systemctl status pi5-sensor-minimal.service --no-pager
 
 echo ""
-echo "✅ SERVICE FIX ABGESCHLOSSEN!"
+echo "✅ SERVICE FIX MIT VENV ABGESCHLOSSEN!"
 echo ""
 echo "🔍 Logs prüfen:"
 echo "sudo journalctl -u pi5-sensor-minimal -f"

@@ -51,9 +51,10 @@ sudo systemctl status pi5-sensor-minimal
 # Logs anzeigen
 sudo journalctl -u pi5-sensor-minimal -f
 
-# Sensoren testen
+# Sensoren testen (mit venv)
 cd ~/sensor-monitor
-python3 sensor_monitor.py test
+source venv/bin/activate
+python sensor_monitor.py test
 
 # Service neustarten
 sudo systemctl restart pi5-sensor-minimal
@@ -63,21 +64,28 @@ sudo systemctl restart pi5-sensor-minimal
 
 ### **Problem: ModuleNotFoundError: No module named 'influxdb_client'**
 
-**Lösung - Service Fix ausführen:**
+**WICHTIG**: DHT22 Sensor benötigt Python venv Umgebung!
+
+**Lösung - Service Fix mit venv:**
 ```bash
 cd ~/Heizung_small
+git pull  # Neueste venv-Version holen
 chmod +x fix_service_minimal.sh
 ./fix_service_minimal.sh
 ```
 
-**Oder manuell:**
+**Oder manuell venv erstellen:**
 ```bash
-# Dependencies neu installieren
-sudo pip3 install --break-system-packages influxdb-client lgpio adafruit-circuitpython-dht
-pip3 install --user influxdb-client lgpio adafruit-circuitpython-dht
+cd ~/sensor-monitor
 
-# Service neustarten
-sudo systemctl restart pi5-sensor-minimal
+# Python venv erstellen
+python3 -m venv venv
+source venv/bin/activate
+
+# Dependencies in venv installieren
+pip install influxdb-client lgpio adafruit-circuitpython-dht
+
+# Service mit venv konfigurieren (siehe fix_service_minimal.sh)
 ```
 
 ## 🔥 Komplett löschen
@@ -93,10 +101,13 @@ sudo systemctl restart pi5-sensor-minimal
 ├── sensor_monitor.py      # Ein Script für alles
 ├── config.ini            # Sensor-Namen hier
 ├── docker-compose.yml    # InfluxDB + Grafana
+├── venv/                 # Python Virtual Environment (für DHT22!)
+│   ├── bin/python        # Python mit allen Dependencies
+│   └── lib/              # Module (influxdb_client, lgpio, etc.)
 └── (automatische Logs)
 ```
 
-**Service**: `pi5-sensor-minimal.service` startet automatisch
+**Service**: `pi5-sensor-minimal.service` nutzt venv/bin/python
 
 ---
 
