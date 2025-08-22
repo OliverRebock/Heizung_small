@@ -362,7 +362,15 @@ pip install --upgrade setuptools
 
 # Pi 5 braucht lgpio!
 echo "📡 Installiere Pi 5 GPIO Support..."
-sudo apt-get install -y python3-lgpio lgpio
+
+# Versuche zuerst die Standard-Repositories
+if sudo apt-get install -y python3-lgpio 2>/dev/null; then
+    echo "   ✅ python3-lgpio aus Repository installiert"
+else
+    echo "   ⚠️ python3-lgpio nicht in Repository - verwende pip"
+fi
+
+# lgpio über pip (funktioniert immer)
 pip install lgpio
 
 pip install adafruit-blinka
