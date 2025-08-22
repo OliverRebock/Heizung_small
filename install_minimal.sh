@@ -50,7 +50,7 @@ if command -v docker &> /dev/null; then
     if sudo systemctl is-active --quiet docker; then
         echo "✅ Docker Service läuft bereits"
     else
-        echo "🔄 Starte Docker Service..."
+        echo "🔄 Versuche Docker Service zu starten..."
         sudo systemctl enable docker
         sudo systemctl start docker
         sleep 5
@@ -59,18 +59,64 @@ if command -v docker &> /dev/null; then
             echo "✅ Docker Service gestartet"
         else
             echo "❌ Docker Service konnte nicht gestartet werden"
-            echo "🔍 Prüfe Status mit: sudo systemctl status docker"
-            exit 1
+            echo "🔍 Führe Docker-Diagnose aus..."
+            
+            # Zeige Docker-Status Details
+            echo ""
+            echo "📊 DOCKER SERVICE STATUS:"
+            sudo systemctl status docker --no-pager -l || true
+            echo ""
+            echo "📋 DOCKER SERVICE LOGS:"
+            sudo journalctl -u docker.service --no-pager -n 10 || true
+            echo ""
+            
+            # Versuche Docker-Problem zu reparieren
+            echo "🔧 Versuche Docker-Reparatur..."
+            
+            # Entferne problematische daemon.json falls vorhanden
+            if [ -f "/etc/docker/daemon.json" ]; then
+                echo "   ⚠️  Entferne problematische daemon.json..."
+                sudo rm -f /etc/docker/daemon.json
+            fi
+            
+            # Stoppe und starte Docker komplett neu
+            echo "   🔄 Stoppe Docker komplett..."
+            sudo systemctl stop docker.service || true
+            sudo systemctl stop docker.socket || true
+            sleep 3
+            
+            echo "   🔄 Starte Docker neu..."
+            sudo systemctl start docker.service
+            sleep 5
+            
+            if sudo systemctl is-active --quiet docker; then
+                echo "   ✅ Docker-Reparatur erfolgreich!"
+            else
+                echo "   ❌ Docker-Reparatur fehlgeschlagen!"
+                echo ""
+                echo "🆘 DOCKER INSTALLATION ÜBERSPRUNGEN"
+                echo "   Manuelle Docker-Reparatur erforderlich:"
+                echo "   1. sudo apt remove docker-ce docker-ce-cli containerd.io"
+                echo "   2. sudo apt autoremove"
+                echo "   3. Neustart: sudo reboot"
+                echo "   4. Dann install_minimal.sh erneut ausführen"
+                echo ""
+                echo "🔄 Installation wird OHNE Docker fortgesetzt..."
+                echo "   (Nur Python Sensor-Monitor wird installiert)"
+                DOCKER_INSTALLATION_FAILED=true
+            fi
         fi
     fi
     
-    # Prüfe Docker Compose
-    if command -v docker-compose &> /dev/null || docker compose version &> /dev/null; then
-        echo "✅ Docker Compose verfügbar"
-        COMPOSE_VERSION=$(docker compose version 2>/dev/null || docker-compose --version 2>/dev/null)
-        echo "   📋 $COMPOSE_VERSION"
-    else
-        echo "⚠️  Docker Compose nicht gefunden, wird mit Docker installiert"
+    # Prüfe Docker Compose nur wenn Docker läuft
+    if sudo systemctl is-active --quiet docker; then
+        if command -v docker-compose &> /dev/null || docker compose version &> /dev/null; then
+            echo "✅ Docker Compose verfügbar"
+            COMPOSE_VERSION=$(docker compose version 2>/dev/null || docker-compose --version 2>/dev/null)
+            echo "   📋 $COMPOSE_VERSION"
+        else
+            echo "⚠️  Docker Compose nicht gefunden, wird mit Docker installiert"
+        fi
     fi
     
     DOCKER_ALREADY_INSTALLED=true
@@ -78,37 +124,55 @@ else
     echo "📦 Docker nicht gefunden, installiere Docker..."
     DOCKER_ALREADY_INSTALLED=false
     
-    # Standard Docker Installation
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sudo sh get-docker.sh
-    sudo usermod -aG docker $USER
-    rm get-docker.sh
-    
-    echo "✅ Docker installiert"
+    # Standard Docker Installation mit Fehlerbehandlung
+    echo "   📥 Lade Docker-Installationsskript..."
+    if curl -fsSL https://get.docker.com -o get-docker.sh; then
+        echo "   🔧 Installiere Docker..."
+        if sudo sh get-docker.sh; then
+            sudo usermod -aG docker $USER
+            echo "   ✅ Docker installiert"
+        else
+            echo "   ❌ Docker-Installation fehlgeschlagen!"
+            echo "   🔄 Installation wird OHNE Docker fortgesetzt..."
+            DOCKER_INSTALLATION_FAILED=true
+        fi
+        rm -f get-docker.sh
+    else
+        echo "   ❌ Docker-Installationsskript konnte nicht heruntergeladen werden!"
+        echo "   🔄 Installation wird OHNE Docker fortgesetzt..."
+        DOCKER_INSTALLATION_FAILED=true
+    fi
 fi
 
-# Stelle sicher dass Docker läuft
-echo "⏳ Warte auf Docker Service..."
-sudo systemctl enable docker
+# Stelle sicher dass Docker läuft (falls Installation erfolgreich war)
+if [ "${DOCKER_INSTALLATION_FAILED:-false}" != "true" ]; then
+    echo "⏳ Überprüfe Docker Service..."
+    sudo systemctl enable docker || true
 
-if ! sudo systemctl is-active --quiet docker; then
-    sudo systemctl start docker
+    if ! sudo systemctl is-active --quiet docker; then
+        sudo systemctl start docker || true
+        sleep 5
+    fi
+
+    if sudo systemctl is-active --quiet docker; then
+        echo "✅ Docker ist bereit"
+        DOCKER_READY=true
+    else
+        echo "⚠️  Docker läuft nicht, Installation wird ohne Docker fortgesetzt"
+        DOCKER_READY=false
+    fi
+else
+    echo "⚠️  Docker-Installation übersprungen"
+    DOCKER_READY=false
 fi
 
-sleep 5
+# =============================================================================
+# 3. DOCKER OPTIMIERUNG (NUR WENN DOCKER LÄUFT)
+# =============================================================================
+if [ "${DOCKER_READY:-false}" = "true" ]; then
+    echo "⚙️ Optimiere Docker für Raspberry Pi 5..."
 
-# Überprüfe Docker Status vor Konfiguration
-if ! sudo systemctl is-active --quiet docker; then
-    echo "🔄 Starte Docker Service..."
-    sudo systemctl start docker
-    sleep 10
-fi
-
-# 🔧 DOCKER FÜR RASPBERRY PI 5 OPTIMIEREN
-echo "⚙️ Optimiere Docker für Raspberry Pi 5..."
-
-# Erstelle optimierte Docker daemon Konfiguration (nur wenn Docker läuft)
-if sudo systemctl is-active --quiet docker; then
+    # Erstelle optimierte Docker daemon Konfiguration
     sudo mkdir -p /etc/docker
     sudo tee /etc/docker/daemon.json > /dev/null << 'EOF'
 {
@@ -142,24 +206,35 @@ EOF
         sudo rm -f /etc/docker/daemon.json
         sudo systemctl restart docker
         sleep 5
+        
+        if sudo systemctl is-active --quiet docker; then
+            echo "✅ Docker mit Standard-Konfiguration gestartet"
+            DOCKER_READY=true
+        else
+            echo "❌ Docker konnte nicht gestartet werden"
+            DOCKER_READY=false
+        fi
     else
         echo "✅ Docker erfolgreich optimiert"
+        DOCKER_READY=true
+    fi
+
+    # 📁 PERSISTENTE DATENVERZEICHNISSE ERSTELLEN (nur wenn Docker läuft)
+    if [ "${DOCKER_READY:-false}" = "true" ]; then
+        echo "📁 Erstelle persistente Datenverzeichnisse..."
+        sudo mkdir -p /opt/docker-data/{influxdb,grafana}
+
+        # Setze Berechtigungen für Grafana (ID 472) und InfluxDB (ID 1000)
+        echo "🔧 Setze Container-Berechtigungen..."
+        sudo chown -R 472:472 /opt/docker-data/grafana 2>/dev/null || sudo chown -R 1000:1000 /opt/docker-data/grafana
+        sudo chown -R 1000:1000 /opt/docker-data/influxdb
+        sudo chmod 755 /opt/docker-data/{influxdb,grafana}
+
+        echo "✅ Docker Optimierung abgeschlossen"
     fi
 else
-    echo "⚠️  Docker nicht aktiv, überspringe Optimierung..."
+    echo "⚠️  Docker-Optimierung übersprungen (Docker nicht verfügbar)"
 fi
-
-# 📁 PERSISTENTE DATENVERZEICHNISSE ERSTELLEN
-echo "📁 Erstelle persistente Datenverzeichnisse..."
-sudo mkdir -p /opt/docker-data/{influxdb,grafana}
-
-# Setze Berechtigungen für Grafana (ID 472) und InfluxDB (ID 1000)
-echo "🔧 Setze Container-Berechtigungen..."
-sudo chown -R 472:472 /opt/docker-data/grafana 2>/dev/null || sudo chown -R 1000:1000 /opt/docker-data/grafana
-sudo chown -R 1000:1000 /opt/docker-data/influxdb
-sudo chmod 755 /opt/docker-data/{influxdb,grafana}
-
-echo "✅ Docker Optimierung abgeschlossen"
 
 # =============================================================================
 # 3. PROJEKTVERZEICHNIS ERSTELLEN
@@ -180,7 +255,14 @@ if [ -f "../sensor_monitor_minimal.py" ]; then
     cp ../sensor_monitor_minimal.py sensor_monitor.py
     cp ../test_all_sensors.py .
     cp ../config_minimal.ini config.ini
-    cp ../docker-compose-minimal.yml docker-compose.yml
+    
+    # Docker-Compose nur kopieren wenn Docker verfügbar ist
+    if [ "${DOCKER_READY:-false}" = "true" ]; then
+        cp ../docker-compose-minimal.yml docker-compose.yml
+        echo "   📦 Docker-Compose Konfiguration kopiert"
+    else
+        echo "   ⚠️  Docker-Compose übersprungen (Docker nicht verfügbar)"
+    fi
 else
     echo "   ⚠️  Git-Repository nicht gefunden, erstelle Standard-Dateien..."
     
@@ -209,8 +291,10 @@ ds18b20_8 = Pufferspeicher Oben
 dht22 = Raumklima Heizraum
 EOF
 
-    # Fallback: Docker Compose erstellen
-    cat > docker-compose.yml << 'EOF'
+    # Fallback: Docker Compose erstellen (nur wenn Docker verfügbar ist)
+    if [ "${DOCKER_READY:-false}" = "true" ]; then
+        echo "   📦 Erstelle Docker-Compose Fallback..."
+        cat > docker-compose.yml << 'EOF'
 services:
   influxdb:
     image: influxdb:2.7
@@ -290,6 +374,9 @@ x-logging: &default-logging
     max-size: "10m"
     max-file: "3"
 EOF
+    else
+        echo "   ⚠️  Docker-Compose Fallback übersprungen (Docker nicht verfügbar)"
+    fi
 
     echo "   ❌ WARNUNG: Standard-Script verwendet, nicht das verbesserte!"
     echo "   💡 Für 9-Sensor Support: git clone ausführen vor Installation"
@@ -315,13 +402,15 @@ pip install influxdb-client lgpio adafruit-circuitpython-dht adafruit-blinka con
 echo "✅ Python Virtual Environment mit Dependencies erstellt"
 
 # =============================================================================
-# 6. SYSTEMD SERVICE ERSTELLEN (MIT VENV!)
+# 6. SYSTEMD SERVICE ERSTELLEN (MIT/OHNE DOCKER)
 # =============================================================================
 echo "⚙️ Erstelle Systemd Service (mit Python venv)..."
 
-sudo tee /etc/systemd/system/pi5-sensor-minimal.service > /dev/null << EOF
+if [ "${DOCKER_READY:-false}" = "true" ]; then
+    # Service mit Docker-Abhängigkeit
+    sudo tee /etc/systemd/system/pi5-sensor-minimal.service > /dev/null << EOF
 [Unit]
-Description=Pi 5 Sensor Monitor (9 Sensors with venv)
+Description=Pi 5 Sensor Monitor (9 Sensors with venv + Docker)
 After=docker.service network.target
 Requires=docker.service
 
@@ -341,32 +430,80 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 EOF
+    echo "   ✅ Service mit Docker-Integration erstellt"
+else
+    # Service nur mit Python (ohne Docker)
+    sudo tee /etc/systemd/system/pi5-sensor-minimal.service > /dev/null << EOF
+[Unit]
+Description=Pi 5 Sensor Monitor (9 Sensors with venv, standalone)
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=$PROJECT_DIR
+ExecStart=$PROJECT_DIR/venv/bin/python sensor_monitor.py
+Restart=always
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    echo "   ✅ Service ohne Docker-Abhängigkeit erstellt"
+    echo "   ⚠️  HINWEIS: Sensordaten werden nur lokal gespeichert (kein InfluxDB)"
+fi
 
 # Service aktivieren
 sudo systemctl daemon-reload
 sudo systemctl enable pi5-sensor-minimal.service
 
 # =============================================================================
-# 7. DOCKER CONTAINER STARTEN (MIT HEALTHCHECKS)
+# 7. DOCKER CONTAINER STARTEN (NUR WENN DOCKER VERFÜGBAR)
 # =============================================================================
-echo "🚀 Starte Docker Container mit Healthchecks..."
-docker compose up -d
+if [ "${DOCKER_READY:-false}" = "true" ]; then
+    echo "🚀 Starte Docker Container mit Healthchecks..."
+    docker compose up -d
 
-# Warten bis Container gesund sind
-echo "⏳ Warte auf Container Healthchecks..."
-echo "   📊 InfluxDB Healthcheck..."
-while ! docker compose exec influxdb influx ping > /dev/null 2>&1; do
-    echo "   ⏳ InfluxDB startet noch..."
-    sleep 5
-done
-echo "   ✅ InfluxDB ist bereit"
+    # Warten bis Container gesund sind
+    echo "⏳ Warte auf Container Healthchecks..."
+    echo "   📊 InfluxDB Healthcheck..."
+    HEALTHCHECK_RETRIES=0
+    while ! docker compose exec -T influxdb influx ping > /dev/null 2>&1; do
+        echo "   ⏳ InfluxDB startet noch... ($((++HEALTHCHECK_RETRIES))/12)"
+        sleep 5
+        if [ $HEALTHCHECK_RETRIES -ge 12 ]; then
+            echo "   ⚠️  InfluxDB Healthcheck Timeout, aber fortfahren..."
+            break
+        fi
+    done
+    
+    if [ $HEALTHCHECK_RETRIES -lt 12 ]; then
+        echo "   ✅ InfluxDB ist bereit"
+    fi
 
-echo "   📈 Grafana Healthcheck..."
-while ! curl -f http://localhost:3000/api/health > /dev/null 2>&1; do
-    echo "   ⏳ Grafana startet noch..."
-    sleep 5
-done
-echo "   ✅ Grafana ist bereit"
+    echo "   📈 Grafana Healthcheck..."
+    HEALTHCHECK_RETRIES=0
+    while ! curl -f http://localhost:3000/api/health > /dev/null 2>&1; do
+        echo "   ⏳ Grafana startet noch... ($((++HEALTHCHECK_RETRIES))/12)"
+        sleep 5
+        if [ $HEALTHCHECK_RETRIES -ge 12 ]; then
+            echo "   ⚠️  Grafana Healthcheck Timeout, aber fortfahren..."
+            break
+        fi
+    done
+    
+    if [ $HEALTHCHECK_RETRIES -lt 12 ]; then
+        echo "   ✅ Grafana ist bereit"
+    fi
+    
+    echo "✅ Docker Container gestartet"
+else
+    echo "⚠️  Docker Container Start übersprungen (Docker nicht verfügbar)"
+    echo "   💡 Nur Python Sensor-Monitor wird verwendet"
+fi
 
 # =============================================================================
 # 8. TEST AUSFÜHREN (MIT VENV)
@@ -397,26 +534,45 @@ echo "🎉 INSTALLATION ABGESCHLOSSEN!"
 echo "=============================="
 echo ""
 echo "✅ Was wurde installiert/konfiguriert:"
-if [ "$DOCKER_ALREADY_INSTALLED" = true ]; then
-    echo "   🐳 Docker (bereits vorhanden) + InfluxDB + Grafana"
+if [ "${DOCKER_READY:-false}" = "true" ]; then
+    if [ "$DOCKER_ALREADY_INSTALLED" = true ]; then
+        echo "   🐳 Docker (bereits vorhanden) + InfluxDB + Grafana"
+    else
+        echo "   🐳 Docker (neu installiert) + InfluxDB + Grafana"
+    fi
+    echo "   🌡️  Support für 9 Sensoren (8x DS18B20 + 1x DHT22)"
+    echo "   🏷️  Individualisierte Sensornamen"
+    echo "   🔓 Grafana OHNE Login"
+    echo "   ⚙️  Systemd Service mit venv + Docker"
 else
-    echo "   🐳 Docker (neu installiert) + InfluxDB + Grafana"
+    echo "   ⚠️  Docker NICHT verfügbar - Standalone Installation"
+    echo "   🌡️  Support für 9 Sensoren (8x DS18B20 + 1x DHT22)"
+    echo "   🏷️  Individualisierte Sensornamen"  
+    echo "   📝 Sensor-Daten werden lokal gespeichert"
+    echo "   ⚙️  Systemd Service mit venv (ohne Docker)"
 fi
-echo "   🌡️  Support für 9 Sensoren (8x DS18B20 + 1x DHT22)"
-echo "   🏷️  Individualisierte Sensornamen"
-echo "   🔓 Grafana OHNE Login"
-echo "   ⚙️  Systemd Service mit venv"
 echo ""
-echo "🌐 Verfügbare Services:"
-echo "   📊 Grafana: http://$(hostname -I | awk '{print $1}'):3000"
-echo "   🗄️  InfluxDB: http://$(hostname -I | awk '{print $1}'):8086"
+if [ "${DOCKER_READY:-false}" = "true" ]; then
+    echo "🌐 Verfügbare Services:"
+    echo "   📊 Grafana: http://$(hostname -I | awk '{print $1}'):3000"
+    echo "   🗄️  InfluxDB: http://$(hostname -I | awk '{print $1}'):8086"
+else
+    echo "⚠️  Web-Services nicht verfügbar (Docker-Problem):"
+    echo "   � Grafana: Nicht verfügbar"
+    echo "   🗄️  InfluxDB: Nicht verfügbar"
+    echo "   💡 Sensor-Daten werden nur lokal geloggt"
+fi
 echo ""
-echo "🔧 Wichtige Befehle:"
+echo "�🔧 Wichtige Befehle:"
 echo "   Service starten: sudo systemctl start pi5-sensor-minimal"
 echo "   Service stoppen: sudo systemctl stop pi5-sensor-minimal"
 echo "   Logs anzeigen:   sudo journalctl -u pi5-sensor-minimal -f"
 echo "   9 Sensoren test: cd $PROJECT_DIR && source venv/bin/activate && python test_all_sensors.py"
-echo "   Docker monitor:  cd $PROJECT_DIR && ./docker_monitor.sh"
+if [ "${DOCKER_READY:-false}" = "true" ]; then
+    echo "   Docker monitor:  cd $PROJECT_DIR && ./docker_monitor.sh"
+else
+    echo "   Docker diagnose: ./docker_diagnose.sh"
+fi
 echo ""
 echo "🐳 Docker Status:"
 echo "   Version: $(docker --version 2>/dev/null || echo 'Nicht verfügbar')"
@@ -424,13 +580,20 @@ echo "   Status:  $(sudo systemctl is-active docker 2>/dev/null && echo '✅ Akt
 echo "   User:    $(groups $USER | grep -q docker && echo '✅ Docker-Gruppe' || echo '⚠️  Neustart für Docker-Gruppe nötig')"
 echo ""
 echo "⚠️  HINWEISE:"
-if [ "$DOCKER_ALREADY_INSTALLED" = true ]; then
-    echo "   🐳 Docker war bereits installiert - nur konfiguriert"
-    echo "   🔄 Neustart empfohlen für GPIO (falls nicht schon aktiviert)"
+if [ "${DOCKER_READY:-false}" = "true" ]; then
+    if [ "$DOCKER_ALREADY_INSTALLED" = true ]; then
+        echo "   🐳 Docker war bereits installiert - nur konfiguriert"
+        echo "   🔄 Neustart empfohlen für GPIO (falls nicht schon aktiviert)"
+    else
+        echo "   🔄 NEUSTART ERFORDERLICH für Docker-Gruppe und GPIO!"
+    fi
+    echo "   📋 Nach Neustart startet alles automatisch"
 else
-    echo "   🔄 NEUSTART ERFORDERLICH für Docker-Gruppe und GPIO!"
+    echo "   ❌ Docker-Installation fehlgeschlagen"
+    echo "   🔧 Verwende './docker_diagnose.sh' für Fehlerbehebung"
+    echo "   🌡️  Sensor-Monitor läuft trotzdem (ohne Web-Interface)"
+    echo "   🔄 Neustart empfohlen für GPIO"
 fi
-echo "   📋 Nach Neustart startet alles automatisch"
 echo ""
 read -p "🔄 Jetzt neu starten? (ja/nein): " reboot_now
 if [ "$reboot_now" = "ja" ]; then
