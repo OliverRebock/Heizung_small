@@ -36,17 +36,65 @@ if ! grep -q "dtoverlay=w1-gpio,gpiopin=4" /boot/firmware/config.txt; then
 fi
 
 # =============================================================================
-# 2. DOCKER INSTALLIEREN & OPTIMIEREN
+# 2. DOCKER PRÜFEN & INSTALLIEREN
 # =============================================================================
-echo "🐳 Installiere Docker..."
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo usermod -aG docker $USER
-rm get-docker.sh
+echo "🐳 Prüfe Docker Installation..."
 
-# Warte bis Docker vollständig gestartet ist
+# Prüfe ob Docker bereits installiert ist
+if command -v docker &> /dev/null; then
+    echo "✅ Docker ist bereits installiert"
+    DOCKER_VERSION=$(docker --version)
+    echo "   📋 $DOCKER_VERSION"
+    
+    # Prüfe ob Docker läuft
+    if sudo systemctl is-active --quiet docker; then
+        echo "✅ Docker Service läuft bereits"
+    else
+        echo "🔄 Starte Docker Service..."
+        sudo systemctl enable docker
+        sudo systemctl start docker
+        sleep 5
+        
+        if sudo systemctl is-active --quiet docker; then
+            echo "✅ Docker Service gestartet"
+        else
+            echo "❌ Docker Service konnte nicht gestartet werden"
+            echo "🔍 Prüfe Status mit: sudo systemctl status docker"
+            exit 1
+        fi
+    fi
+    
+    # Prüfe Docker Compose
+    if command -v docker-compose &> /dev/null || docker compose version &> /dev/null; then
+        echo "✅ Docker Compose verfügbar"
+        COMPOSE_VERSION=$(docker compose version 2>/dev/null || docker-compose --version 2>/dev/null)
+        echo "   📋 $COMPOSE_VERSION"
+    else
+        echo "⚠️  Docker Compose nicht gefunden, wird mit Docker installiert"
+    fi
+    
+    DOCKER_ALREADY_INSTALLED=true
+else
+    echo "📦 Docker nicht gefunden, installiere Docker..."
+    DOCKER_ALREADY_INSTALLED=false
+    
+    # Standard Docker Installation
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sudo sh get-docker.sh
+    sudo usermod -aG docker $USER
+    rm get-docker.sh
+    
+    echo "✅ Docker installiert"
+fi
+
+# Stelle sicher dass Docker läuft
 echo "⏳ Warte auf Docker Service..."
 sudo systemctl enable docker
+
+if ! sudo systemctl is-active --quiet docker; then
+    sudo systemctl start docker
+fi
+
 sleep 5
 
 # Überprüfe Docker Status vor Konfiguration
@@ -348,8 +396,12 @@ echo ""
 echo "🎉 INSTALLATION ABGESCHLOSSEN!"
 echo "=============================="
 echo ""
-echo "✅ Was wurde installiert:"
-echo "   🐳 Docker + InfluxDB + Grafana"
+echo "✅ Was wurde installiert/konfiguriert:"
+if [ "$DOCKER_ALREADY_INSTALLED" = true ]; then
+    echo "   🐳 Docker (bereits vorhanden) + InfluxDB + Grafana"
+else
+    echo "   🐳 Docker (neu installiert) + InfluxDB + Grafana"
+fi
 echo "   🌡️  Support für 9 Sensoren (8x DS18B20 + 1x DHT22)"
 echo "   🏷️  Individualisierte Sensornamen"
 echo "   🔓 Grafana OHNE Login"
@@ -364,8 +416,22 @@ echo "   Service starten: sudo systemctl start pi5-sensor-minimal"
 echo "   Service stoppen: sudo systemctl stop pi5-sensor-minimal"
 echo "   Logs anzeigen:   sudo journalctl -u pi5-sensor-minimal -f"
 echo "   9 Sensoren test: cd $PROJECT_DIR && source venv/bin/activate && python test_all_sensors.py"
+echo "   Docker monitor:  cd $PROJECT_DIR && ./docker_monitor.sh"
 echo ""
-echo "⚠️  NEUSTART ERFORDERLICH für GPIO!"
+echo "🐳 Docker Status:"
+echo "   Version: $(docker --version 2>/dev/null || echo 'Nicht verfügbar')"
+echo "   Status:  $(sudo systemctl is-active docker 2>/dev/null && echo '✅ Aktiv' || echo '❌ Inaktiv')"
+echo "   User:    $(groups $USER | grep -q docker && echo '✅ Docker-Gruppe' || echo '⚠️  Neustart für Docker-Gruppe nötig')"
+echo ""
+echo "⚠️  HINWEISE:"
+if [ "$DOCKER_ALREADY_INSTALLED" = true ]; then
+    echo "   🐳 Docker war bereits installiert - nur konfiguriert"
+    echo "   🔄 Neustart empfohlen für GPIO (falls nicht schon aktiviert)"
+else
+    echo "   🔄 NEUSTART ERFORDERLICH für Docker-Gruppe und GPIO!"
+fi
+echo "   📋 Nach Neustart startet alles automatisch"
+echo ""
 read -p "🔄 Jetzt neu starten? (ja/nein): " reboot_now
 if [ "$reboot_now" = "ja" ]; then
     sudo reboot

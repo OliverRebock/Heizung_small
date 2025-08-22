@@ -21,6 +21,11 @@ chmod +x install_minimal.sh
 ./install_minimal.sh
 ```
 
+**Intelligente Installation:**
+- ✅ **Erkennt vorhandenes Docker** und startet es nur
+- ✅ **Installiert Docker nur bei Bedarf**
+- ✅ **Robuste Fehlerbehandlung** bei Docker-Problemen
+
 **Das war's!** Nach dem Neustart läuft alles automatisch.
 
 ## 🌐 Zugriff
@@ -64,9 +69,24 @@ sudo systemctl restart pi5-sensor-minimal
 
 # 🐳 DOCKER MONITORING (NEU!)
 ./docker_monitor.sh
+
+# 🔍 DOCKER DIAGNOSE (bei Problemen)
+./docker_diagnose.sh
 ```
 
 ## 🚨 Troubleshooting
+
+### **Problem: Docker Service failed**
+
+**Lösung - Docker Diagnose:**
+```bash
+# Komplette Docker-Analyse  
+./docker_diagnose.sh
+
+# Oder manuelle Reparatur:
+sudo rm -f /etc/docker/daemon.json
+sudo systemctl restart docker
+```
 
 ### **Problem: ModuleNotFoundError: No module named 'influxdb_client'**
 
