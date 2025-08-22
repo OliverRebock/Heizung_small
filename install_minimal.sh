@@ -291,9 +291,15 @@ EOF
 # 7. PYTHON DEPENDENCIES INSTALLIEREN
 # =============================================================================
 echo "🐍 Installiere Python Dependencies..."
-sudo apt install -y python3-pip python3-venv
+sudo apt install -y python3-pip python3-venv python3-dev
 
-pip3 install --user influxdb-client lgpio adafruit-circuitpython-dht
+# System-weite Installation für alle User
+sudo pip3 install influxdb-client lgpio adafruit-circuitpython-dht configparser
+
+# Zusätzlich für aktuellen User (falls sudo-Installation nicht funktioniert)
+pip3 install --user influxdb-client lgpio adafruit-circuitpython-dht configparser
+
+echo "✅ Python Dependencies installiert"
 
 # =============================================================================
 # 8. SYSTEMD SERVICE ERSTELLEN
@@ -337,6 +343,23 @@ sleep 30
 # 10. TEST AUSFÜHREN
 # =============================================================================
 echo "🧪 Teste Installation..."
+
+# Prüfe ob Python Module verfügbar sind
+echo "🔍 Prüfe Python Dependencies..."
+python3 -c "import influxdb_client; print('✅ influxdb_client OK')" || {
+    echo "❌ influxdb_client fehlt - installiere manuell..."
+    sudo pip3 install influxdb-client
+    pip3 install --user influxdb-client
+}
+
+python3 -c "import lgpio; print('✅ lgpio OK')" || {
+    echo "❌ lgpio fehlt - installiere manuell..."
+    sudo pip3 install lgpio
+    pip3 install --user lgpio
+}
+
+# Test ausführen
+echo "🔬 Teste Sensor Script..."
 python3 sensor_monitor.py test
 
 # =============================================================================
