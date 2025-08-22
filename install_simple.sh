@@ -121,7 +121,8 @@ class Pi5SensorReader:
         return sensors
         
     def read_dht22(self):
-        """Lese DHT22 Sensor - Pi 5 optimiert"""
+        """Lese DHT22 Sensor - Pi 5 optimiert mit GPIO cleanup"""
+        dht = None
         try:
             import adafruit_dht
             import board
@@ -162,12 +163,31 @@ class Pi5SensorReader:
                     else:
                         print(f"   ⚠️  DHT22: {e} (Versuch {attempt+1}/5)")
                 except Exception as e:
-                    print(f"   ⚠️  DHT22: Unerwarteter Fehler: {e}")
+                    if "GPIO busy" in str(e):
+                        print(f"   ⚠️  DHT22: GPIO 18 belegt (Versuch {attempt+1}/5)")
+                        # GPIO cleanup versuchen
+                        if dht:
+                            try:
+                                dht.exit()
+                            except:
+                                pass
+                        time.sleep(5)  # Längere Pause bei GPIO busy
+                    else:
+                        print(f"   ⚠️  DHT22: Unerwarteter Fehler: {e}")
                         
             print("   ❌ DHT22: Keine gültigen Daten nach 5 Versuchen")
             
         except ImportError:
             print("   ❌ DHT22: adafruit-circuitpython-dht nicht installiert")
+        except Exception as e:
+            print(f"   ❌ DHT22: Initialisierung fehlgeschlagen: {e}")
+        finally:
+            # GPIO cleanup
+            if dht:
+                try:
+                    dht.exit()
+                except:
+                    pass
         except Exception as e:
             print(f"   ❌ DHT22: {e}")
             
