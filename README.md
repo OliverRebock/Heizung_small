@@ -1,13 +1,52 @@
 # 🌡️ Heizung Small - Pi 5 Sensor Monitor
 
-Ein professionelles IoT-Monitoring-System für Raspberry Pi 5 mit 6x DS18B20 Temperatursensoren und 1x DHT22 Sensor.
+Ein **minimales** IoT-Monitoring-System für Raspberry Pi 5 mit 8x DS18B20 + 1x DHT22 Sensoren.
+
+## 🎯 MINIMAL INSTALLATION (Empfohlen)
+
+**Ein-Klick Installation** - alles in 2 Befehlen:
+
+```bash
+# Repository klonen
+git clone https://github.com/OliverRebock/Heizung_small.git
+cd Heizung_small
+
+# Alles installieren (Docker + InfluxDB + Grafana ohne Login)
+chmod +x install_minimal.sh
+./install_minimal.sh
+```
+
+**✅ Das war's!** Nach Neustart läuft alles automatisch.
+
+**🌐 Zugriff:**
+- **📊 Grafana**: `http://YOUR_PI_IP:3000` (KEIN Login!)
+- **🗄️ InfluxDB**: `http://YOUR_PI_IP:8086` (pi5admin/pi5sensors2024)
 
 ## 🚀 Features
 
-- ⚡ **Pi 5 optimiert** - Nutzt lgpio für beste Performance
-- 🔄 **Parallel-Processing** - Simultanes Auslesen aller Sensoren
-- 📊 **Grafana Dashboards** - Professionelle Visualisierung
-- 🗄️ **InfluxDB Integration** - Zeitreihen-Datenbank
+- ⚡ **MINIMAL** - Nur das Nötige, funktioniert sofort
+- 🏷️ **Individualisierte Sensornamen** aus config.ini
+- � **Grafana OHNE Login** - sofort nutzbar  
+- 🐳 **Docker** - InfluxDB + Grafana automatisch
+- ⚙️ **Ein Service** - kein Chaos, startet automatisch
+
+## 🏷️ Sensornamen anpassen
+
+**Datei**: `~/sensor-monitor/config.ini`
+
+```ini
+[labels]
+ds18b20_1 = Mein Vorlauf Sensor
+ds18b20_2 = Mein Rücklauf Sensor
+ds18b20_3 = Warmwasser Sensor
+# ... anpassen nach Bedarf
+```
+
+**Danach**: `sudo systemctl restart pi5-sensor-minimal`
+
+---
+
+## 📚 ERWEITERTE DOKUMENTATION (optional)
 - 🐳 **Docker Compose** - Einfache Bereitstellung
 - 📱 **Mobile optimiert** - Responsive Dashboards
 - 🚨 **Alarm-System** - Temperatur-Überwachung

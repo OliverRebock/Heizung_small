@@ -1,0 +1,38 @@
+services:
+  influxdb:
+    image: influxdb:2.7
+    container_name: pi5-influxdb
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=pi5admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=pi5sensors2024
+      - DOCKER_INFLUXDB_INIT_ORG=pi5sensors
+      - DOCKER_INFLUXDB_INIT_BUCKET=sensor_data
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=pi5-sensor-token-2024
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: pi5-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # 🔓 GRAFANA OHNE LOGIN
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_SECURITY_ADMIN_PASSWORD=pi5sensors2024
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - influxdb
+
+volumes:
+  influxdb-data:
+  grafana-data:
