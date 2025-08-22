@@ -177,13 +177,8 @@ echo ""
 # =============================================================================
 echo "📋 Entferne Konfigurationsdateien..."
 
-# GPIO-Konfiguration aus /boot/firmware/config.txt entfernen
-echo "   🔌 Entferne GPIO-Konfiguration..."
-if [ -f "/boot/firmware/config.txt" ]; then
-    sudo sed -i '/dtoverlay=w1-gpio/d' /boot/firmware/config.txt
-    sudo sed -i '/dtoverlay=dht22/d' /boot/firmware/config.txt
-    sudo sed -i '/# Pi5 Sensor Monitor/d' /boot/firmware/config.txt
-fi
+# GPIO-Konfiguration BLEIBT erhalten (nicht entfernen)
+echo "   🔌 GPIO-Konfiguration bleibt erhalten (nicht geändert)"
 
 # Crontab-Einträge entfernen
 echo "   ⏰ Entferne Crontab-Einträge..."
@@ -295,15 +290,15 @@ echo "   🐳 Alle Docker Container und Images"
 echo "   ⚙️  Alle Systemd Services"
 echo "   📁 Alle Projektverzeichnisse"
 echo "   🐍 Python Virtual Environments"
-echo "   📋 Konfigurationsdateien (/boot/config.txt, crontab)"
+echo "   📋 Konfigurationsdateien (crontab, logrotate)"
 echo "   📊 Log-Dateien und Backups"
-echo "   🔌 GPIO-Konfiguration"
+echo "   ⚠️  GPIO-Konfiguration bleibt ERHALTEN"
 echo ""
 
 if [ "$remove_docker" = "ja" ]; then
     echo "   🐳 Docker wurde KOMPLETT entfernt"
     echo ""
-    echo "⚠️  NEUSTART ERFORDERLICH für GPIO/Boot-Konfiguration!"
+    echo "⚠️  NEUSTART EMPFOHLEN für Docker-Dienste!"
     echo ""
     read -p "🔄 Jetzt neu starten? (ja/nein): " reboot_now
     if [ "$reboot_now" = "ja" ]; then
@@ -313,8 +308,7 @@ if [ "$remove_docker" = "ja" ]; then
 else
     echo "   🐳 Docker blieb installiert"
     echo ""
-    echo "💡 Neustart empfohlen für GPIO/Boot-Konfiguration"
-    echo "   Befehl: sudo reboot"
+    echo "💡 Kein Neustart erforderlich (GPIO-Konfiguration unverändert)"
 fi
 
 echo ""

@@ -101,6 +101,10 @@ python influxdb_individualized.py        # InfluxDB mit Namen
 # InfluxDB Integration
 python sensor_influxdb.py test          # Verbindung testen
 python sensor_influxdb.py monitor       # Kontinuierlich loggen
+
+# ⚠️ Komplette Deinstallation
+chmod +x reset.sh                        # Script ausführbar machen
+./reset.sh                               # ALLES löschen (mit Warnung!)
 ```
 
 ### 🏷️ Sensor-Namen individualisieren
@@ -166,6 +170,33 @@ docker compose restart
 sudo systemctl status pi5-sensor-monitoring
 ```
 
+## 🔥 Komplette Deinstallation
+
+⚠️ **WARNUNG**: Das `reset.sh` Script entfernt **ALLES** vom Projekt!
+
+```bash
+# Script ausführbar machen
+chmod +x reset.sh
+
+# Komplette Deinstallation (mit Sicherheitsabfrage)
+./reset.sh
+```
+
+**Was wird gelöscht:**
+- 🐳 Alle Docker Container, Images und Volumes
+- ⚙️ Alle Systemd Services und Konfigurationen
+- 📁 Alle Projektverzeichnisse und Dateien
+- 🐍 Python Virtual Environments
+- ⏰ Crontab-Einträge
+- 📊 Log-Dateien und Backups
+- 🔧 Optional: Docker komplett deinstallieren
+
+**Was bleibt erhalten:**
+- ✅ GPIO-Konfiguration in `/boot/firmware/config.txt`
+- ✅ System-Python und andere Software
+
+> 💡 Das Script fragt zweimal nach Bestätigung. Kein Neustart erforderlich.
+
 ## 📁 Projektstruktur
 
 ```
@@ -183,6 +214,7 @@ Heizung_small/
 ├── install_docker_influxdb.sh           # Docker Installation
 ├── backup_system.sh                     # 🆕 Backup & Recovery
 ├── setup_individualized_sensors.sh      # 🆕 Sensor-Naming Setup
+├── reset.sh                             # 🆕 🔥 KOMPLETTE DEINSTALLATION
 ├── docker-compose.yml                   # Docker Stack
 ├── docker-compose-clean.yml             # 🆕 Optimized Docker
 ├── grafana_dashboard_*.json             # Grafana Dashboards
