@@ -59,6 +59,27 @@ python3 sensor_monitor.py test
 sudo systemctl restart pi5-sensor-minimal
 ```
 
+## 🚨 Troubleshooting
+
+### **Problem: ModuleNotFoundError: No module named 'influxdb_client'**
+
+**Lösung - Service Fix ausführen:**
+```bash
+cd ~/Heizung_small
+chmod +x fix_service_minimal.sh
+./fix_service_minimal.sh
+```
+
+**Oder manuell:**
+```bash
+# Dependencies neu installieren
+sudo pip3 install --break-system-packages influxdb-client lgpio adafruit-circuitpython-dht
+pip3 install --user influxdb-client lgpio adafruit-circuitpython-dht
+
+# Service neustarten
+sudo systemctl restart pi5-sensor-minimal
+```
+
 ## 🔥 Komplett löschen
 
 ```bash

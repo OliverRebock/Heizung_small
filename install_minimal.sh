@@ -309,17 +309,23 @@ echo "⚙️ Erstelle Systemd Service..."
 sudo tee /etc/systemd/system/pi5-sensor-minimal.service > /dev/null << EOF
 [Unit]
 Description=Pi 5 Sensor Monitor (Minimal)
-After=docker.service
+After=docker.service network.target
 Requires=docker.service
 
 [Service]
 Type=simple
 User=pi
+Group=pi
 WorkingDirectory=$PROJECT_DIR
+Environment=PATH=/usr/local/bin:/usr/bin:/bin:/home/pi/.local/bin
+Environment=PYTHONPATH=/usr/local/lib/python3.11/site-packages:/home/pi/.local/lib/python3.11/site-packages
+ExecStartPre=/bin/sleep 30
 ExecStartPre=/usr/bin/docker compose up -d
 ExecStart=/usr/bin/python3 sensor_monitor.py
 Restart=always
-RestartSec=10
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
