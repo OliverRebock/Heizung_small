@@ -44,12 +44,25 @@ sudo sh get-docker.sh
 sudo usermod -aG docker $USER
 rm get-docker.sh
 
+# Warte bis Docker vollständig gestartet ist
+echo "⏳ Warte auf Docker Service..."
+sudo systemctl enable docker
+sleep 5
+
+# Überprüfe Docker Status vor Konfiguration
+if ! sudo systemctl is-active --quiet docker; then
+    echo "🔄 Starte Docker Service..."
+    sudo systemctl start docker
+    sleep 10
+fi
+
 # 🔧 DOCKER FÜR RASPBERRY PI 5 OPTIMIEREN
 echo "⚙️ Optimiere Docker für Raspberry Pi 5..."
 
-# Erstelle optimierte Docker daemon Konfiguration
-sudo mkdir -p /etc/docker
-sudo tee /etc/docker/daemon.json > /dev/null << 'EOF'
+# Erstelle optimierte Docker daemon Konfiguration (nur wenn Docker läuft)
+if sudo systemctl is-active --quiet docker; then
+    sudo mkdir -p /etc/docker
+    sudo tee /etc/docker/daemon.json > /dev/null << 'EOF'
 {
   "log-driver": "json-file",
   "log-opts": {
@@ -70,15 +83,35 @@ sudo tee /etc/docker/daemon.json > /dev/null << 'EOF'
 }
 EOF
 
-# Docker neustarten mit neuer Konfiguration
-sudo systemctl restart docker
+    # Docker neustarten mit neuer Konfiguration
+    echo "🔄 Neustarte Docker mit Optimierungen..."
+    sudo systemctl restart docker
+    
+    # Warte und prüfe ob Docker erfolgreich neugestartet wurde
+    sleep 10
+    if ! sudo systemctl is-active --quiet docker; then
+        echo "⚠️  Docker Neustart fehlgeschlagen, verwende Standard-Konfiguration..."
+        sudo rm -f /etc/docker/daemon.json
+        sudo systemctl restart docker
+        sleep 5
+    else
+        echo "✅ Docker erfolgreich optimiert"
+    fi
+else
+    echo "⚠️  Docker nicht aktiv, überspringe Optimierung..."
+fi
 
 # 📁 PERSISTENTE DATENVERZEICHNISSE ERSTELLEN
 echo "📁 Erstelle persistente Datenverzeichnisse..."
 sudo mkdir -p /opt/docker-data/{influxdb,grafana}
-sudo chown -R 1000:1000 /opt/docker-data/grafana
+
+# Setze Berechtigungen für Grafana (ID 472) und InfluxDB (ID 1000)
+echo "🔧 Setze Container-Berechtigungen..."
+sudo chown -R 472:472 /opt/docker-data/grafana 2>/dev/null || sudo chown -R 1000:1000 /opt/docker-data/grafana
 sudo chown -R 1000:1000 /opt/docker-data/influxdb
 sudo chmod 755 /opt/docker-data/{influxdb,grafana}
+
+echo "✅ Docker Optimierung abgeschlossen"
 
 # =============================================================================
 # 3. PROJEKTVERZEICHNIS ERSTELLEN
