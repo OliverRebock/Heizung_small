@@ -36,13 +36,49 @@ if ! grep -q "dtoverlay=w1-gpio,gpiopin=4" /boot/firmware/config.txt; then
 fi
 
 # =============================================================================
-# 2. DOCKER INSTALLIEREN
+# 2. DOCKER INSTALLIEREN & OPTIMIEREN
 # =============================================================================
 echo "🐳 Installiere Docker..."
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 sudo usermod -aG docker $USER
 rm get-docker.sh
+
+# 🔧 DOCKER FÜR RASPBERRY PI 5 OPTIMIEREN
+echo "⚙️ Optimiere Docker für Raspberry Pi 5..."
+
+# Erstelle optimierte Docker daemon Konfiguration
+sudo mkdir -p /etc/docker
+sudo tee /etc/docker/daemon.json > /dev/null << 'EOF'
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  },
+  "storage-driver": "overlay2",
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ],
+  "default-ulimits": {
+    "nofile": {
+      "Name": "nofile",
+      "Hard": 64000,
+      "Soft": 64000
+    }
+  }
+}
+EOF
+
+# Docker neustarten mit neuer Konfiguration
+sudo systemctl restart docker
+
+# 📁 PERSISTENTE DATENVERZEICHNISSE ERSTELLEN
+echo "📁 Erstelle persistente Datenverzeichnisse..."
+sudo mkdir -p /opt/docker-data/{influxdb,grafana}
+sudo chown -R 1000:1000 /opt/docker-data/grafana
+sudo chown -R 1000:1000 /opt/docker-data/influxdb
+sudo chmod 755 /opt/docker-data/{influxdb,grafana}
 
 # =============================================================================
 # 3. PROJEKTVERZEICHNIS ERSTELLEN
@@ -101,6 +137,9 @@ services:
     restart: unless-stopped
     ports:
       - "8086:8086"
+    # 🔧 RASPBERRY PI 5 OPTIMIERUNGEN
+    mem_limit: 512m
+    cpus: 2.0
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=pi5admin
@@ -110,6 +149,14 @@ services:
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=pi5-sensor-token-2024
     volumes:
       - influxdb-data:/var/lib/influxdb2
+    # 🔧 RASPBERRY PI OPTIMIERUNGEN
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   grafana:
     image: grafana/grafana:10.2.0
@@ -117,20 +164,56 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    # 🔧 RASPBERRY PI 5 OPTIMIERUNGEN
+    mem_limit: 256m
+    cpus: 1.0
     environment:
+      # 🔓 GRAFANA OHNE LOGIN
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=true
       - GF_SECURITY_ALLOW_EMBEDDING=true
       - GF_SECURITY_ADMIN_PASSWORD=pi5sensors2024
+      # 🚀 PERFORMANCE OPTIMIERUNGEN FÜR PI 5
+      - GF_RENDERING_SERVER_URL=
+      - GF_RENDERING_CALLBACK_URL=
+      - GF_LOG_LEVEL=warn
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
     volumes:
       - grafana-data:/var/lib/grafana
+    # 🔧 RASPBERRY PI OPTIMIERUNGEN  
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     depends_on:
-      - influxdb
+      influxdb:
+        condition: service_healthy
 
 volumes:
   influxdb-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/docker-data/influxdb
   grafana-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/docker-data/grafana
+
+# 📊 DOCKER HEALTHCHECKS & LOGGING
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
 EOF
 
     echo "   ❌ WARNUNG: Standard-Script verwendet, nicht das verbesserte!"
@@ -189,14 +272,26 @@ sudo systemctl daemon-reload
 sudo systemctl enable pi5-sensor-minimal.service
 
 # =============================================================================
-# 7. DOCKER CONTAINER STARTEN
+# 7. DOCKER CONTAINER STARTEN (MIT HEALTHCHECKS)
 # =============================================================================
-echo "🚀 Starte Docker Container..."
+echo "🚀 Starte Docker Container mit Healthchecks..."
 docker compose up -d
 
-# Warten bis Container bereit sind
-echo "⏳ Warte auf Container..."
-sleep 30
+# Warten bis Container gesund sind
+echo "⏳ Warte auf Container Healthchecks..."
+echo "   📊 InfluxDB Healthcheck..."
+while ! docker compose exec influxdb influx ping > /dev/null 2>&1; do
+    echo "   ⏳ InfluxDB startet noch..."
+    sleep 5
+done
+echo "   ✅ InfluxDB ist bereit"
+
+echo "   📈 Grafana Healthcheck..."
+while ! curl -f http://localhost:3000/api/health > /dev/null 2>&1; do
+    echo "   ⏳ Grafana startet noch..."
+    sleep 5
+done
+echo "   ✅ Grafana ist bereit"
 
 # =============================================================================
 # 8. TEST AUSFÜHREN (MIT VENV)

@@ -5,6 +5,9 @@ services:
     restart: unless-stopped
     ports:
       - "8086:8086"
+    # 🔧 RASPBERRY PI 5 OPTIMIERUNGEN
+    mem_limit: 512m
+    cpus: 2.0
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=pi5admin
@@ -14,6 +17,14 @@ services:
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=pi5-sensor-token-2024
     volumes:
       - influxdb-data:/var/lib/influxdb2
+    # 🔧 RASPBERRY PI OPTIMIERUNGEN
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   grafana:
     image: grafana/grafana:10.2.0
@@ -21,6 +32,9 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    # 🔧 RASPBERRY PI 5 OPTIMIERUNGEN
+    mem_limit: 256m
+    cpus: 1.0
     environment:
       # 🔓 GRAFANA OHNE LOGIN
       - GF_AUTH_ANONYMOUS_ENABLED=true
@@ -28,11 +42,43 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=true
       - GF_SECURITY_ALLOW_EMBEDDING=true
       - GF_SECURITY_ADMIN_PASSWORD=pi5sensors2024
+      # 🚀 PERFORMANCE OPTIMIERUNGEN FÜR PI 5
+      - GF_RENDERING_SERVER_URL=
+      - GF_RENDERING_CALLBACK_URL=
+      - GF_LOG_LEVEL=warn
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
     volumes:
       - grafana-data:/var/lib/grafana
+    # 🔧 RASPBERRY PI OPTIMIERUNGEN  
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     depends_on:
-      - influxdb
+      influxdb:
+        condition: service_healthy
 
 volumes:
   influxdb-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/docker-data/influxdb
   grafana-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/docker-data/grafana
+
+# 📊 DOCKER HEALTHCHECKS & LOGGING
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"

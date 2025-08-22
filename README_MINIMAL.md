@@ -61,6 +61,9 @@ python sensor_monitor.py test
 
 # Service neustarten
 sudo systemctl restart pi5-sensor-minimal
+
+# 🐳 DOCKER MONITORING (NEU!)
+./docker_monitor.sh
 ```
 
 ## 🚨 Troubleshooting
@@ -103,14 +106,23 @@ pip install influxdb-client lgpio adafruit-circuitpython-dht
 ~/sensor-monitor/
 ├── sensor_monitor.py      # Ein Script für alles
 ├── config.ini            # Sensor-Namen hier
-├── docker-compose.yml    # InfluxDB + Grafana
+├── docker-compose.yml    # InfluxDB + Grafana (OPTIMIERT für Pi 5!)
 ├── venv/                 # Python Virtual Environment (für DHT22!)
 │   ├── bin/python        # Python mit allen Dependencies
 │   └── lib/              # Module (influxdb_client, lgpio, etc.)
+├── docker_monitor.sh     # 🆕 Docker System Monitoring
 └── (automatische Logs)
 ```
 
 **Service**: `pi5-sensor-minimal.service` nutzt venv/bin/python
+
+**Docker Optimierungen für Pi 5:**
+- 🚀 Memory Limits: InfluxDB=512MB, Grafana=256MB
+- 🔧 CPU Limits: InfluxDB=2 cores, Grafana=1 core  
+- 📊 Healthchecks für Container-Überwachung
+- 💾 Persistente Bind-Mounts in `/opt/docker-data/`
+- 📋 Log-Rotation (10MB, 3 Dateien max)
+- ⚡ Performance-Tuning für Grafana
 
 ---
 
