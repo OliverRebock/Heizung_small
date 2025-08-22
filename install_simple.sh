@@ -188,8 +188,6 @@ class Pi5SensorReader:
                     dht.exit()
                 except:
                     pass
-        except Exception as e:
-            print(f"   ❌ DHT22: {e}")
             
         return None
         
