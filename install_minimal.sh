@@ -137,9 +137,6 @@ services:
     restart: unless-stopped
     ports:
       - "8086:8086"
-    # 🔧 RASPBERRY PI 5 OPTIMIERUNGEN
-    mem_limit: 512m
-    cpus: 2.0
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=pi5admin
@@ -164,9 +161,6 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-    # 🔧 RASPBERRY PI 5 OPTIMIERUNGEN
-    mem_limit: 256m
-    cpus: 1.0
     environment:
       # 🔓 GRAFANA OHNE LOGIN
       - GF_AUTH_ANONYMOUS_ENABLED=true

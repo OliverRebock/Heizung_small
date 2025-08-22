@@ -117,9 +117,7 @@ pip install influxdb-client lgpio adafruit-circuitpython-dht
 **Service**: `pi5-sensor-minimal.service` nutzt venv/bin/python
 
 **Docker Optimierungen für Pi 5:**
-- 🚀 Memory Limits: InfluxDB=512MB, Grafana=256MB
-- 🔧 CPU Limits: InfluxDB=2 cores, Grafana=1 core  
-- 📊 Healthchecks für Container-Überwachung
+-  Healthchecks für Container-Überwachung
 - 💾 Persistente Bind-Mounts in `/opt/docker-data/`
 - 📋 Log-Rotation (10MB, 3 Dateien max)
 - ⚡ Performance-Tuning für Grafana
