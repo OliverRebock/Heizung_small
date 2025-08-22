@@ -10,13 +10,14 @@ services:
     volumes:
       - influxdb-data:/var/lib/influxdb2
       - influxdb-config:/etc/influxdb2
-      - ./backups:/backups
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=pi5admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=pi5sensors2024
       - DOCKER_INFLUXDB_INIT_ORG=Pi5SensorOrg
       - DOCKER_INFLUXDB_INIT_BUCKET=sensor_data
       - DOCKER_INFLUXDB_INIT_RETENTION=30d
-      - INFLUXD_NO_AUTH=true
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=pi5-sensor-token-2024-super-secret
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
       interval: 30s
@@ -35,21 +36,12 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards:/var/lib/grafana/dashboards
     environment:
+      - GF_SECURITY_ADMIN_USER=pi5admin
+      - GF_SECURITY_ADMIN_PASSWORD=pi5sensors2024
       - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-piechart-panel
       - GF_SECURITY_ALLOW_EMBEDDING=true
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_NAME=Main Org.
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-      - GF_AUTH_DISABLE_LOGIN_FORM=true
-      - GF_AUTH_DISABLE_SIGNOUT_MENU=true
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_USERS_ALLOW_ORG_CREATE=false
-      - GF_USERS_AUTO_ASSIGN_ORG=true
-      - GF_USERS_AUTO_ASSIGN_ORG_ROLE=Admin
-      - GF_SECURITY_ADMIN_USER=
-      - GF_SECURITY_ADMIN_PASSWORD=
+      - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
     depends_on:
       influxdb:
@@ -64,12 +56,12 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
-    container_name: pi5-sensor-prometheus
+    container_name: pi5-prometheus
     restart: unless-stopped
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus:/etc/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -99,30 +91,10 @@ services:
     networks:
       - pi5-network
 
-  backup:
-    image: influxdb:2.7-alpine
-    container_name: pi5-backup-service
-    restart: "no"
-    volumes:
-      - influxdb-data:/var/lib/influxdb2:ro
-      - ./backups:/backups
-    environment:
-      - INFLUXDB_TOKEN=pi5-sensor-token-2024-super-secret
-      - INFLUXDB_ORG=Pi5SensorOrg
-    command: >
-      sh -c "
-        echo 'Backup Service bereit - manueller Start mit: docker compose run backup'
-        sleep 86400
-      "
-    networks:
-      - pi5-network
+networks:
+  pi5-network:
+    driver: bridge
 
-volumes:
-  influxdb-data:
-    driver: local
-  influxdb-config:
-    driver: local
-  grafana-data:
 volumes:
   influxdb-data:
     driver: local
@@ -132,10 +104,3 @@ volumes:
     driver: local
   prometheus-data:
     driver: local
-
-networks:
-  pi5-network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
