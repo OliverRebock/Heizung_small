@@ -300,7 +300,7 @@ source venv/bin/activate
 # Dependencies in venv installieren
 echo "📦 Installiere Dependencies in venv..."
 pip install --upgrade pip
-pip install influxdb-client lgpio adafruit-circuitpython-dht configparser
+pip install influxdb-client lgpio adafruit-circuitpython-dht adafruit-blinka configparser
 
 echo "✅ Python Virtual Environment mit Dependencies erstellt"
 

@@ -1,11 +1,11 @@
 # 🌡️ Pi 5 Sensor Monitor - MINIMAL
 
-**Ein-Klick Installation** für Raspberry Pi 5 mit 8x DS18B20 + 1x DHT22 Sensoren.
+**Ein-Klick Installation** für Raspberry Pi 5 mit **9 Sensoren**: 8x DS18B20 + 1x DHT22 (Temp + Humidity = 10 Messwerte).
 
 ## 🎯 Was macht es?
 
 - ✅ **Docker + InfluxDB + Grafana** automatisch installiert
-- ✅ **Individualisierte Sensornamen** aus `config.ini`
+- ✅ **9 Sensoren individualisiert** aus `config.ini` (8x DS18B20 + DHT22)
 - ✅ **Grafana OHNE Login** - sofort nutzbar
 - ✅ **Ein Service** für alles - kein Chaos
 
@@ -51,9 +51,12 @@ sudo systemctl status pi5-sensor-minimal
 # Logs anzeigen
 sudo journalctl -u pi5-sensor-minimal -f
 
-# Sensoren testen (mit venv)
+# ALLE 9 Sensoren testen (8x DS18B20 + 1x DHT22)
 cd ~/sensor-monitor
 source venv/bin/activate
+python test_all_sensors.py
+
+# Einzelner Sensor-Test
 python sensor_monitor.py test
 
 # Service neustarten

@@ -23,7 +23,7 @@ fi
 echo "📦 Installiere Dependencies in venv..."
 source venv/bin/activate
 pip install --upgrade pip
-pip install influxdb-client lgpio adafruit-circuitpython-dht configparser
+pip install influxdb-client lgpio adafruit-circuitpython-dht adafruit-blinka configparser
 
 # Korrigierten Service erstellen (mit venv!)
 echo "⚙️ Erstelle korrigierten Service (mit venv)..."

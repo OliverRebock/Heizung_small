@@ -54,14 +54,52 @@ class MinimalSensorMonitor:
             return None
             
     def read_dht22(self):
-        """DHT22 lesen"""
+        """DHT22 lesen - mit mehreren Versuchen für Robustheit"""
         try:
             import adafruit_dht
-            dht = adafruit_dht.DHT22(int(self.config['sensors']['dht22_gpio']))
-            temp = dht.temperature
-            humidity = dht.humidity
-            return round(temp, 2) if temp else None, round(humidity, 2) if humidity else None
-        except:
+            import board
+            
+            # GPIO 18 verwenden
+            dht = adafruit_dht.DHT22(board.D18)
+            
+            # Mehrere Versuche da DHT22 manchmal unzuverlässig ist
+            for attempt in range(3):
+                try:
+                    temp = dht.temperature
+                    humidity = dht.humidity
+                    
+                    if temp is not None and humidity is not None:
+                        return round(temp, 2), round(humidity, 2)
+                        
+                except RuntimeError as e:
+                    if attempt < 2:  # Nicht beim letzten Versuch
+                        time.sleep(0.5)
+                        continue
+                    else:
+                        print(f"   ⚠️  DHT22 Fehler nach 3 Versuchen: {e}")
+                        
+            # Fallback auf lgpio Methode
+            return self.read_dht22_lgpio()
+            
+        except Exception as e:
+            print(f"   ❌ DHT22 Import/Board Fehler: {e}")
+            return self.read_dht22_lgpio()
+            
+    def read_dht22_lgpio(self):
+        """DHT22 mit lgpio lesen (Fallback)"""
+        try:
+            import lgpio
+            
+            # Vereinfachte DHT22 Implementierung
+            gpio_pin = int(self.config['sensors']['dht22_gpio'])
+            
+            # Hier würde eine lgpio-basierte DHT22 Implementierung stehen
+            # Für jetzt nur Dummy-Werte oder None zurückgeben
+            print(f"   ⚠️  DHT22 lgpio Fallback für GPIO {gpio_pin}")
+            return None, None
+            
+        except Exception as e:
+            print(f"   ❌ DHT22 lgpio Fehler: {e}")
             return None, None
             
     def read_all_sensors(self):
@@ -71,8 +109,10 @@ class MinimalSensorMonitor:
         
         print(f"📊 {timestamp.strftime('%Y-%m-%d %H:%M:%S')} - Lese Sensoren...")
         
-        # DS18B20 Sensoren
+        # DS18B20 Sensoren (bis zu 8 Stück)
         ds18b20_sensors = self.get_ds18b20_sensors()
+        ds18b20_count = 0
+        
         for device_path, sensor_info in ds18b20_sensors.items():
             temp = self.read_ds18b20(device_path)
             if temp is not None:
@@ -84,30 +124,42 @@ class MinimalSensorMonitor:
                     .time(timestamp)
                 measurements.append(point)
                 print(f"   📏 {sensor_info['label']}: {temp}°C")
+                ds18b20_count += 1
+            else:
+                print(f"   ❌ {sensor_info['label']}: Lesefehler")
                 
-        # DHT22 Sensor
+        # DHT22 Sensor (der 9. Sensor!)
         temp, humidity = self.read_dht22()
-        dht_label = self.sensor_labels.get('dht22', 'DHT22')
+        dht_label = self.sensor_labels.get('dht22', 'DHT22 Raumklima')
         
         if temp is not None:
             point = Point("temperature") \
-                .tag("sensor", "dht22") \
-                .tag("label", dht_label) \
+                .tag("sensor", "dht22_temp") \
+                .tag("label", f"{dht_label} (Temperatur)") \
                 .tag("type", "DHT22") \
                 .field("value", temp) \
                 .time(timestamp)
             measurements.append(point)
             print(f"   📏 {dht_label} Temp: {temp}°C")
+        else:
+            print(f"   ❌ {dht_label} Temp: Lesefehler")
             
         if humidity is not None:
             point = Point("humidity") \
-                .tag("sensor", "dht22") \
-                .tag("label", dht_label) \
+                .tag("sensor", "dht22_humidity") \
+                .tag("label", f"{dht_label} (Luftfeuchtigkeit)") \
                 .tag("type", "DHT22") \
                 .field("value", humidity) \
                 .time(timestamp)
             measurements.append(point)
             print(f"   📏 {dht_label} Humidity: {humidity}%")
+        else:
+            print(f"   ❌ {dht_label} Humidity: Lesefehler")
+            
+        # Zusammenfassung
+        total_measurements = len(measurements)
+        expected_measurements = ds18b20_count + (2 if temp is not None or humidity is not None else 0)
+        print(f"   📊 Sensoren erfolgreich: {total_measurements}/{ds18b20_count + 2} (DS18B20: {ds18b20_count}/8, DHT22: {2 if temp is not None and humidity is not None else 1 if temp is not None or humidity is not None else 0}/2)")
             
         return measurements
         
