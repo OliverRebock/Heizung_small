@@ -266,6 +266,13 @@ EOF
     if [ "${DOCKER_READY:-false}" = "true" ]; then
         echo "   📦 Erstelle Docker-Compose Fallback..."
         cat > docker-compose.yml << 'EOF'
+# 📊 DOCKER HEALTHCHECKS & LOGGING (MUSS AM ANFANG STEHEN!)
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   influxdb:
     image: influxdb:2.7
@@ -338,12 +345,6 @@ volumes:
       o: bind
       device: /opt/docker-data/grafana
 
-# 📊 DOCKER HEALTHCHECKS & LOGGING
-x-logging: &default-logging
-  driver: "json-file"
-  options:
-    max-size: "10m"
-    max-file: "3"
 EOF
     else
         echo "   ⚠️  Docker-Compose Fallback übersprungen (Docker nicht verfügbar)"
