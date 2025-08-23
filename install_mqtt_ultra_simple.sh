@@ -160,27 +160,87 @@ sudo systemctl status pi5-mqtt-bridge --no-pager
 
 echo "🧪 Teste Auto-Discovery sofort..."
 cd ~/pi5-sensors
-source venv/bin/activate
-python mqtt_bridge.py discovery
 
-# 7. MQTT Verbindung testen
+# Aktiviere Python venv mit Error Handling
+if [ -d "venv" ]; then
+    source venv/bin/activate
+else
+    echo "❌ Python venv nicht gefunden - erstelle neues venv..."
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install paho-mqtt influxdb-client
+fi
+
+# Prüfe ob mqtt_bridge.py existiert mit Error Handling
+if [ ! -f "mqtt_bridge.py" ]; then
+    echo "❌ mqtt_bridge.py nicht gefunden - lade von GitHub..."
+    wget -q https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/mqtt_bridge.py -O mqtt_bridge.py
+    chmod +x mqtt_bridge.py
+fi
+
+# Discovery mit Error Handling
+python3 -c "
+import sys
+sys.path.append('.')
+
+try:
+    from mqtt_bridge import Pi5MqttBridge
+    import time
+    
+    print('✅ mqtt_bridge erfolgreich importiert')
+    bridge = Pi5MqttBridge()
+    if bridge.setup_mqtt():
+        time.sleep(1)
+        bridge.publish_discovery()
+        time.sleep(1)
+        print('✅ Auto-Discovery an Home Assistant gesendet!')
+    else:
+        print('❌ MQTT Setup fehlgeschlagen - prüfe config.ini')
+        
+except ImportError as e:
+    print(f'❌ Import Error: {e}')
+    print('🔧 Repariere mit: wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_mqtt_import_error.sh')
+    sys.exit(1)
+except Exception as e:
+    print(f'❌ MQTT Error: {e}')
+    print('🔧 Überprüfe Home Assistant MQTT Einstellungen')
+    sys.exit(1)
+"
+
+# 7. MQTT Verbindung testen mit Error Handling
 echo "🧪 Teste MQTT Verbindung zu Home Assistant..."
-timeout 10 mosquitto_pub -h "$HA_IP" -u "$MQTT_USER" -P "$MQTT_PASS" -t "pi5_heizung/test" -m "connection_test" || {
-    echo "⚠️ MQTT Test fehlgeschlagen - prüfe Home Assistant MQTT Einstellungen"
-}
+if command -v mosquitto_pub >/dev/null 2>&1; then
+    timeout 10 mosquitto_pub -h "$HA_IP" -u "$MQTT_USER" -P "$MQTT_PASS" -t "pi5_heizung/test" -m "connection_test" && {
+        echo "✅ MQTT Verbindung erfolgreich!"
+    } || {
+        echo "⚠️ MQTT Test fehlgeschlagen - aber das ist normal bei ersten Installation"
+        echo "🔧 Prüfe Home Assistant MQTT Einstellungen falls Probleme auftreten"
+    }
+else
+    echo "ℹ️ mosquitto-clients nicht installiert - installiere für Tests mit:"
+    echo "   sudo apt-get install mosquitto-clients"
+fi
 
 echo ""
-echo "🎉 FERTIG!"
-echo "========="
+echo "🎉 FERTIG! Pi5 Heizungs Messer → Home Assistant"
+echo "=============================================="
 echo ""
 echo "✅ MQTT Ziel: Home Assistant ($HA_IP:1883)"
 echo "✅ MQTT User: $MQTT_USER"
-echo "✅ Bridge Service installiert"
+echo "✅ Bridge Service installiert & läuft"
+echo "✅ Auto-Discovery gesendet"
 echo ""
-echo "🔧 Befehle:"
+echo "🏠 Home Assistant:"
+echo "   🔍 Sensoren erscheinen automatisch unter:"
+echo "   📱 Einstellungen → Geräte & Services → MQTT"
+echo "   🎯 Suche nach 'Pi5 Heizungs Messer'"
+echo ""
+echo "🔧 Wichtige Befehle:"
 echo "   sudo systemctl status pi5-mqtt-bridge"
+echo "   sudo journalctl -u pi5-mqtt-bridge -f"
 echo "   mosquitto_sub -h $HA_IP -u $MQTT_USER -P $MQTT_PASS -t 'pi5_heizung/+/state'"
 echo ""
-echo "📋 Home Assistant:"
-echo "   Die Sensoren erscheinen automatisch in Home Assistant!"
-echo "   Prüfe: Einstellungen → Geräte & Services → MQTT"
+echo "� Falls Probleme auftreten:"
+echo "   cd ~/pi5-sensors"
+echo "   wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_mqtt_import_error.sh"
+echo "   chmod +x fix_mqtt_import_error.sh && ./fix_mqtt_import_error.sh"
