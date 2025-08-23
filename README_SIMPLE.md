@@ -129,6 +129,17 @@ sudo systemctl status pi5-sensors
 # Live Logs
 sudo journalctl -u pi5-sensors -f
 
+# 🚨 PI5-SENSORS SERVICE PROBLEME?
+cd ~/pi5-sensors
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/debug_pi5_sensors.sh
+chmod +x debug_pi5_sensors.sh
+./debug_pi5_sensors.sh
+
+# Quick Fix für Service-Probleme
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/quickfix_pi5_sensors.sh
+chmod +x quickfix_pi5_sensors.sh
+./quickfix_pi5_sensors.sh
+
 # Sensor Test
 cd ~/pi5-sensors
 source venv/bin/activate  
