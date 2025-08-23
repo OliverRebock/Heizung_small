@@ -141,6 +141,12 @@ docker compose ps
 # MQTT Bridge (falls installiert)
 sudo systemctl status pi5-mqtt-bridge
 sudo journalctl -u pi5-mqtt-bridge -f
+
+# Home Assistant Auto-Discovery testen
+cd ~/pi5-sensors
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/test_home_assistant.sh
+chmod +x test_home_assistant.sh
+./test_home_assistant.sh
 ```
 
 ## 🛠️ Troubleshooting
@@ -192,6 +198,12 @@ sudo systemctl restart pi5-mqtt-bridge
 # MQTT Bridge Status
 sudo systemctl status pi5-mqtt-bridge
 sudo journalctl -u pi5-mqtt-bridge -f
+
+# 🏠 HOME ASSISTANT AUTO-DISCOVERY TESTEN
+cd ~/pi5-sensors
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/test_home_assistant.sh
+chmod +x test_home_assistant.sh
+./test_home_assistant.sh
 
 # MQTT Verbindung testen
 cd ~/pi5-sensors

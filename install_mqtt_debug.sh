@@ -109,9 +109,50 @@ chmod +x setup_mqtt_service.sh
 
 echo "✅ MQTT Bridge geladen"
 
-# 6. Service installieren
-echo "⚙️ Installiere Service..."
-bash setup_mqtt_service.sh
+# 6. Service direkt installieren
+echo "⚙️ Installiere MQTT Bridge Service..."
+
+# Service Definition erstellen
+sudo tee /etc/systemd/system/pi5-mqtt-bridge.service > /dev/null <<EOF
+[Unit]
+Description=Pi5 Heizungs Messer MQTT Bridge
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/pi5-sensors
+Environment=PATH=/home/pi/pi5-sensors/venv/bin
+ExecStart=/home/pi/pi5-sensors/venv/bin/python /home/pi/pi5-sensors/mqtt_bridge.py
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=pi5-mqtt-bridge
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Service aktivieren und starten
+sudo systemctl daemon-reload
+sudo systemctl enable pi5-mqtt-bridge
+sudo systemctl start pi5-mqtt-bridge
+
+echo "DEBUG: Warte 3 Sekunden auf Service-Start..."
+sleep 3
+
+# Service Status prüfen
+echo "DEBUG: MQTT Bridge Service Status:"
+sudo systemctl status pi5-mqtt-bridge --no-pager -l
+
+echo ""
+echo "DEBUG: Teste Auto-Discovery..."
+cd ~/pi5-sensors
+source venv/bin/activate
+timeout 10 python mqtt_bridge.py discovery || echo "WARNUNG: Discovery Test Timeout"
 
 # 7. MQTT Verbindung testen
 echo ""
