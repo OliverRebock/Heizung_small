@@ -1,0 +1,37 @@
+# Docker Compose für InfluxDB 1.x (einfachere Authentifizierung)
+services:
+  influxdb:
+    image: influxdb:1.8
+    container_name: pi5-influxdb
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      - INFLUXDB_DB=sensor_data
+      - INFLUXDB_ADMIN_USER=admin
+      - INFLUXDB_ADMIN_PASSWORD=pi5sensors2024
+      - INFLUXDB_USER=pi5user
+      - INFLUXDB_USER_PASSWORD=pi5sensors2024
+    volumes:
+      - influxdb-data:/var/lib/influxdb
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: pi5-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # 🔓 GRAFANA OHNE LOGIN!
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - influxdb
+
+volumes:
+  influxdb-data:
+  grafana-data:

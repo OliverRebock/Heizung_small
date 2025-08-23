@@ -89,14 +89,34 @@ sudo modprobe w1-gpio
 sudo modprobe w1-therm
 ```
 
+## � Grafana Dashboards
+
+Nach der Installation stehen dir fertige Dashboards zur Verfügung:
+
+```bash
+# Dashboard-Dateien im Projekt:
+grafana_dashboard_heizkreise.json   # 🏠 4 Heizkreise (Wärmepumpe, OG, UG, Keller) 
+grafana_dashboard_main.json         # 📊 Alle 9 Sensoren Übersicht
+grafana_dashboard_mobile.json       # 📱 Mobile Ansicht
+grafana_dashboard_alarms.json       # 🚨 Alarme
+```
+
+**Dashboard importieren:**
+1. **Grafana öffnen**: `http://PI_IP:3000`
+2. **Klick**: `+` → `Import`
+3. **Upload**: `grafana_dashboard_heizkreise.json`
+4. **Datasource**: Wähle deine InfluxDB
+5. **Import** - Fertig! 🎯
+
 ## 📁 Projekt-Struktur
 
 ```
 ~/pi5-sensors/
-├── sensor_reader.py     # Hauptscript (9 Sensoren)
-├── config.ini          # Sensornamen hier ändern
-├── docker-compose.yml  # InfluxDB + Grafana
-├── venv/               # Python Virtual Environment
+├── sensor_reader.py                    # Hauptscript (9 Sensoren)
+├── config.ini                         # Sensornamen hier ändern
+├── docker-compose.yml                 # InfluxDB + Grafana
+├── grafana_dashboard_heizkreise.json  # 🏠 4 Heizkreise Dashboard
+├── venv/                              # Python Virtual Environment
 └── (logs...)
 ```
 
