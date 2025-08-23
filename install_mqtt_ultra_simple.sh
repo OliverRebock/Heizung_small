@@ -5,43 +5,72 @@ set -e
 echo "🏠 Pi5 MQTT Installation für Home Assistant"
 echo "=========================================="
 
-# Home Assistant Konfiguration abfragen
-echo ""
-echo "🏠 Home Assistant Konfiguration:"
-read -p "   IP-Adresse von Home Assistant (z.B. 192.168.1.100): " HA_IP
-if [ -z "$HA_IP" ]; then
-    echo "❌ Home Assistant IP ist erforderlich!"
+# Parameter prüfen oder interaktiv abfragen
+if [ -n "$1" ] && [ -n "$2" ] && [ -n "$3" ]; then
+    # Parameter-basiert: install_mqtt_ultra_simple.sh HA_IP MQTT_USER MQTT_PASS
+    HA_IP="$1"
+    MQTT_USER="$2"
+    MQTT_PASS="$3"
+    echo "📋 Parameter erkannt:"
+    echo "   🏠 Home Assistant: $HA_IP:1883"
+    echo "   🔐 MQTT User: $MQTT_USER"
+    echo "   📡 Ziel: Home Assistant MQTT Broker"
+elif [ -t 0 ]; then
+    # Interaktiv (nur wenn TTY verfügbar)
+    echo ""
+    echo "🏠 Home Assistant Konfiguration:"
+    read -p "   IP-Adresse von Home Assistant (z.B. 192.168.1.100): " HA_IP
+    if [ -z "$HA_IP" ]; then
+        echo "❌ Home Assistant IP ist erforderlich!"
+        exit 1
+    fi
+
+    echo ""
+    echo "🔐 MQTT Authentifizierung für Home Assistant:"
+    read -p "   MQTT Username: " MQTT_USER
+    if [ -z "$MQTT_USER" ]; then
+        echo "❌ MQTT Username ist erforderlich!"
+        exit 1
+    fi
+
+    echo -n "   MQTT Passwort: "
+    read -s MQTT_PASS
+    echo ""
+    if [ -z "$MQTT_PASS" ]; then
+        echo "❌ MQTT Passwort ist erforderlich!"
+        exit 1
+    fi
+
+    echo ""
+    echo "📋 Konfiguration:"
+    echo "   🏠 Home Assistant: $HA_IP:1883"
+    echo "   🔐 MQTT User: $MQTT_USER"
+    echo "   📡 Ziel: Home Assistant MQTT Broker"
+    echo ""
+
+    read -p "Fortfahren? [J/n]: " CONFIRM
+    CONFIRM=${CONFIRM:-j}
+    if [[ ! $CONFIRM =~ ^[Jj] ]]; then
+        echo "Installation abgebrochen."
+        exit 0
+    fi
+else
+    # Curl | bash ohne TTY
+    echo ""
+    echo "❌ Für curl | bash Installation bitte Parameter verwenden:"
+    echo ""
+    echo "🔧 Parameter-Installation:"
+    echo "   curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_ultra_simple.sh | bash -s -- HA_IP MQTT_USER MQTT_PASS"
+    echo ""
+    echo "📋 Beispiel:"
+    echo "   curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_ultra_simple.sh | bash -s -- 192.168.1.100 mqtt_user mqtt_pass"
+    echo ""
+    echo "🔧 Oder interaktiv installieren:"
+    echo "   wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_ultra_simple.sh"
+    echo "   chmod +x install_mqtt_ultra_simple.sh"
+    echo "   ./install_mqtt_ultra_simple.sh"
+    echo ""
     exit 1
-fi
-
-echo ""
-echo "🔐 MQTT Authentifizierung für Home Assistant:"
-read -p "   MQTT Username: " MQTT_USER
-if [ -z "$MQTT_USER" ]; then
-    echo "❌ MQTT Username ist erforderlich!"
-    exit 1
-fi
-
-echo -n "   MQTT Passwort: "
-read -s MQTT_PASS
-echo ""
-if [ -z "$MQTT_PASS" ]; then
-    echo "❌ MQTT Passwort ist erforderlich!"
-    exit 1
-fi
-
-echo ""
-echo "📋 Konfiguration:"
-echo "   🏠 Home Assistant: $HA_IP:1883"
-echo "   🔐 MQTT User: $MQTT_USER"
-echo "   📡 Ziel: Home Assistant MQTT Broker"
-echo ""
-
-read -p "Fortfahren? [J/n]: " CONFIRM
-CONFIRM=${CONFIRM:-j}
-if [[ ! $CONFIRM =~ ^[Jj] ]]; then
-    echo "Installation abgebrochen."
-    exit 0
 fi
 
 # 1. MQTT Client installieren (KEIN Broker!)

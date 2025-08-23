@@ -23,16 +23,24 @@ curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/inst
 Für Home Assistant MQTT Integration:
 
 ```bash
-# Option 1: Ultra-Einfach (fragt HA IP + MQTT Credentials ab)
-curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_ultra_simple.sh | bash
+# Option 1: Parameter-Installation (EMPFOHLEN für curl | bash)
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_ultra_simple.sh | bash -s -- HA_IP MQTT_USER MQTT_PASS
 
-# Option 2: DEBUG Version (falls Probleme auftreten)
+# Beispiel:
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_ultra_simple.sh | bash -s -- 192.168.1.100 mqtt_user mqtt_pass
+
+# Option 2: Interaktive Installation
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_ultra_simple.sh
+chmod +x install_mqtt_ultra_simple.sh
+./install_mqtt_ultra_simple.sh
+
+# Option 3: DEBUG Version (falls Probleme auftreten)
 curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_debug.sh | bash
 
-# Option 3: Einfache Installation (mit Parameter möglich)
+# Option 4: Einfache Installation (mit Parameter möglich)
 curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_simple.sh | bash
 
-# Option 4: Interaktive Installation
+# Option 5: Interaktive Installation
 curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt.sh | bash
 
 # Service Status prüfen
@@ -41,8 +49,8 @@ sudo systemctl status pi5-mqtt-bridge
 
 **Wichtig:** 
 - 📡 **Sendet direkt an Home Assistant MQTT Broker** (nicht lokaler Broker!)
-- 🏠 **Home Assistant IP** wird interaktiv abgefragt
-- 🔐 **MQTT Username/Passwort** für Home Assistant wird abgefragt
+- 🏠 **Home Assistant IP** als Parameter oder interaktiv
+- 🔐 **MQTT Username/Passwort** für Home Assistant als Parameter oder interaktiv
 
 **Features:**
 - 🔄 **Auto-Discovery** für alle 9 Sensoren in Home Assistant
