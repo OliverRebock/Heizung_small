@@ -18,6 +18,25 @@ curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/inst
 
 **Das war's!** Nach dem Neustart läuft alles.
 
+## 🏠 Home Assistant Integration (Optional)
+
+Für Home Assistant MQTT Integration:
+
+```bash
+# MQTT Bridge installieren 
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt.sh | bash
+
+# Service aktivieren
+sudo systemctl enable pi5-mqtt-bridge
+sudo systemctl start pi5-mqtt-bridge
+```
+
+**Features:**
+- 🔄 **Auto-Discovery** für alle 9 Sensoren in Home Assistant
+- 📡 **Live Updates** alle 30 Sekunden  
+- 🏷️ **Professionelle Namen** (HK1 Vorlauf, HK2 Rücklauf, etc.)
+- 🔐 **Optional**: MQTT Authentifizierung
+
 ## 🌐 Zugriff
 
 - **📊 Grafana**: `http://PI_IP:3000` (kein Login!)
@@ -65,6 +84,10 @@ python sensor_reader.py test
 # Container Status
 cd ~/pi5-sensors
 docker compose ps
+
+# MQTT Bridge (falls installiert)
+sudo systemctl status pi5-mqtt-bridge
+sudo journalctl -u pi5-mqtt-bridge -f
 ```
 
 ## 🛠️ Troubleshooting
@@ -91,6 +114,18 @@ ls /sys/bus/w1/devices/
 # Falls leer:
 sudo modprobe w1-gpio
 sudo modprobe w1-therm
+```
+
+### MQTT Bridge Probleme?
+```bash
+# MQTT Service neu starten
+sudo systemctl restart pi5-mqtt-bridge
+
+# MQTT Topics testen
+mosquitto_sub -t 'pi5_heizung/+/state' -v
+
+# Konfiguration prüfen
+nano ~/pi5-sensors/config.ini
 ```
 
 ## � Grafana Dashboards
@@ -120,9 +155,16 @@ grafana_dashboard_alarms.json       # 🚨 Alarme
 ├── config.ini                         # Sensornamen hier ändern
 ├── docker-compose.yml                 # InfluxDB + Grafana
 ├── grafana_dashboard_heizkreise.json  # 🏠 4 Heizkreise Dashboard
+├── mqtt_bridge.py                     # 🏠 Home Assistant MQTT Bridge
 ├── venv/                              # Python Virtual Environment
 └── (logs...)
 ```
+
+## 📚 Erweiterte Dokumentation
+
+- **🏠 MQTT Integration**: Siehe `MQTT_INTEGRATION.md`
+- **📊 Grafana Dashboards**: Siehe `GRAFANA_DASHBOARDS.md`  
+- **🔧 Installation**: Siehe `QUICKSTART.md`
 
 ---
 
