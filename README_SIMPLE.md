@@ -192,6 +192,12 @@ sudo modprobe w1-therm
 
 ### MQTT Bridge Probleme?
 ```bash
+# 🚨 CONFIG.INI REPARIEREN (falls mehrfach installiert)
+cd ~/pi5-sensors
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_config_mqtt.sh
+chmod +x fix_config_mqtt.sh
+./fix_config_mqtt.sh
+
 # MQTT Service neu starten
 sudo systemctl restart pi5-mqtt-bridge
 
