@@ -1,0 +1,133 @@
+# Home Assistant Konfiguration für Pi5 Heizungs Messer
+# ====================================================
+# 
+# Diese Datei zeigt, wie die MQTT Sensoren in Home Assistant 
+# manuell konfiguriert werden können (falls Auto-Discovery nicht funktioniert)
+#
+# Einfach in configuration.yaml einfügen und Home Assistant neustarten.
+
+# MQTT Broker Konfiguration
+mqtt:
+  broker: 192.168.1.100  # IP-Adresse deines Raspberry Pi 5
+  port: 1883
+  username: ""           # Optional: MQTT Username
+  password: ""           # Optional: MQTT Password
+  discovery: true        # Auto-Discovery aktivieren
+
+# Sensoren (nur nötig falls Auto-Discovery nicht funktioniert)
+sensor:
+  # Heizkreis 1 - Vorlauf
+  - platform: mqtt
+    name: "HK1 Vorlauf"
+    state_topic: "pi5_heizung/28-0000000001/state"
+    value_template: "{{ value_json.temperature }}"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    unique_id: "pi5_hk1_vorlauf"
+    
+  # Heizkreis 1 - Rücklauf  
+  - platform: mqtt
+    name: "HK1 Rücklauf"
+    state_topic: "pi5_heizung/28-0000000002/state"
+    value_template: "{{ value_json.temperature }}"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    unique_id: "pi5_hk1_ruecklauf"
+    
+  # Heizkreis 2 - Vorlauf
+  - platform: mqtt
+    name: "HK2 Vorlauf"
+    state_topic: "pi5_heizung/28-0000000003/state"
+    value_template: "{{ value_json.temperature }}"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    unique_id: "pi5_hk2_vorlauf"
+    
+  # Heizkreis 2 - Rücklauf
+  - platform: mqtt
+    name: "HK2 Rücklauf"
+    state_topic: "pi5_heizung/28-0000000004/state"
+    value_template: "{{ value_json.temperature }}"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    unique_id: "pi5_hk2_ruecklauf"
+    
+  # Heizkreis 3 - Vorlauf
+  - platform: mqtt
+    name: "HK3 Vorlauf"
+    state_topic: "pi5_heizung/28-0000000005/state"
+    value_template: "{{ value_json.temperature }}"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    unique_id: "pi5_hk3_vorlauf"
+    
+  # Heizkreis 3 - Rücklauf
+  - platform: mqtt
+    name: "HK3 Rücklauf"
+    state_topic: "pi5_heizung/28-0000000006/state"
+    value_template: "{{ value_json.temperature }}"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    unique_id: "pi5_hk3_ruecklauf"
+    
+  # Heizkreis 4 - Vorlauf  
+  - platform: mqtt
+    name: "HK4 Vorlauf"
+    state_topic: "pi5_heizung/28-0000000007/state"
+    value_template: "{{ value_json.temperature }}"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    unique_id: "pi5_hk4_vorlauf"
+    
+  # Heizkreis 4 - Rücklauf
+  - platform: mqtt
+    name: "HK4 Rücklauf"
+    state_topic: "pi5_heizung/28-0000000008/state"
+    value_template: "{{ value_json.temperature }}"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    unique_id: "pi5_hk4_ruecklauf"
+    
+  # Heizraum Temperatur (DHT22)
+  - platform: mqtt
+    name: "Heizraum Temperatur"
+    state_topic: "pi5_heizung/dht22_temperature/state"
+    value_template: "{{ value_json.temperature }}"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    unique_id: "pi5_heizraum_temperatur"
+    
+  # Heizraum Luftfeuchtigkeit (DHT22)
+  - platform: mqtt
+    name: "Heizraum Luftfeuchtigkeit"
+    state_topic: "pi5_heizung/dht22_humidity/state"
+    value_template: "{{ value_json.humidity }}"
+    unit_of_measurement: "%"
+    device_class: humidity
+    unique_id: "pi5_heizraum_luftfeuchtigkeit"
+
+# Beispiel Automation: Alarm bei hoher Vorlauftemperatur
+automation:
+  - alias: "Heizung Alarm - Hohe Vorlauftemperatur"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.hk1_vorlauf
+        above: 75
+        for:
+          minutes: 5
+    action:
+      - service: notify.mobile_app_dein_handy
+        data:
+          title: "🔥 Heizung Alarm"
+          message: "HK1 Vorlauftemperatur zu hoch: {{ states('sensor.hk1_vorlauf') }}°C"
+
+# Beispiel Template für Temperaturdifferenz
+template:
+  - sensor:
+      - name: "HK1 Temperaturdifferenz"
+        unit_of_measurement: "K"
+        state: >
+          {% set vorlauf = states('sensor.hk1_vorlauf') | float(0) %}
+          {% set ruecklauf = states('sensor.hk1_ruecklauf') | float(0) %}
+          {{ (vorlauf - ruecklauf) | round(1) }}
+        device_class: temperature

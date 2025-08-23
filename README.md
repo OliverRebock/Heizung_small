@@ -1,259 +1,258 @@
-# 🌡️ Pi5 Heizungs Messer - Professional Heat Pump Monitor
+# 🌡️ Pi5 Heizungs Messer
+**Professionelles Heizungsmonitoring mit Raspberry Pi 5**
 
-Ein **minimales** IoT-Monitoring-System für Raspberry Pi 5 mit 8x DS18B20 + 1x DHT22 Sensoren.
+[![Raspberry Pi 5](https://img.shields.io/badge/Raspberry%20Pi-5-red.svg)](https://www.raspberrypi.org/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://docs.docker.com/compose/)
+[![InfluxDB](https://img.shields.io/badge/InfluxDB-2.x-orange.svg)](https://www.influxdata.com/)
+[![Grafana](https://img.shields.io/badge/Grafana-Dashboard-green.svg)](https://grafana.com/)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-MQTT-yellow.svg)](https://www.home-assistant.io/)
 
-## 🎯 MINIMAL INSTALLATION (Empfohlen)
+## 🏠 Überblick
 
-**Ein-Klick Installation** - alles in 2 Befehlen:
+**Pi5 Heizungs Messer** ist eine professionelle Lösung zur Überwachung von Heizungsanlagen mit 9 Temperatursensoren (8x DS18B20 + 1x DHT22). Das System bietet:
 
-```bash
-# Repository klonen
-git clone https://github.com/OliverRebock/Heizung_small.git
-cd Heizung_small
+- ✅ **4 Heizkreise** mit Vorlauf/Rücklauf Temperaturen
+- ✅ **Raumklima-Überwachung** (Temperatur + Luftfeuchtigkeit) 
+- ✅ **Grafana Dashboards** für professionelle Visualisierung
+- ✅ **Home Assistant Integration** via MQTT
+- ✅ **Docker-basiert** für einfache Installation
+- ✅ **Pi5 optimiert** mit lgpio Support
 
-# Alles installieren (Docker + InfluxDB + Grafana ohne Login)
-chmod +x install_minimal.sh
-./install_minimal.sh
-```
+## 📊 Dashboard Vorschau
 
-**✅ Das war's!** Nach Neustart läuft alles automatisch.
+**4 Heizkreise überwacht:**
+- 🔥 **HK1**: Wärmepumpe (Vorlauf/Rücklauf)
+- 🏠 **HK2**: Obergeschoss (Vorlauf/Rücklauf)  
+- 🏘️ **HK3**: Untergeschoss (Vorlauf/Rücklauf)
+- 🏠 **HK4**: Keller (Vorlauf/Rücklauf)
+- 🌡️ **Heizraum**: Temperatur + Luftfeuchtigkeit
 
-**🌐 Zugriff:**
-- **📊 Grafana**: `http://YOUR_PI_IP:3000` (KEIN Login!)
-- **🗄️ InfluxDB**: `http://YOUR_PI_IP:8086` (pi5admin/pi5sensors2024)
-
-## 🚀 Features
-
-- ⚡ **MINIMAL** - Nur das Nötige, funktioniert sofort
-- 🏷️ **Individualisierte Sensornamen** aus config.ini
-- � **Grafana OHNE Login** - sofort nutzbar  
-- 🐳 **Docker** - InfluxDB + Grafana automatisch
-- ⚙️ **Ein Service** - kein Chaos, startet automatisch
-
-## 🏷️ Sensornamen anpassen
-
-**Datei**: `~/sensor-monitor/config.ini`
-
-```ini
-[labels]
-ds18b20_1 = Mein Vorlauf Sensor
-ds18b20_2 = Mein Rücklauf Sensor
-ds18b20_3 = Warmwasser Sensor
-# ... anpassen nach Bedarf
-```
-
-**Danach**: `sudo systemctl restart pi5-sensor-minimal`
-
----
-
-## 📚 ERWEITERTE DOKUMENTATION (optional)
-- 🐳 **Docker Compose** - Einfache Bereitstellung
-- 📱 **Mobile optimiert** - Responsive Dashboards
-- 🚨 **Alarm-System** - Temperatur-Überwachung
-- 🔧 **Auto-Installation** - Ein-Klick Setup
-
-## 📊 Hardware
-
-| Komponente | Anzahl | GPIO | Beschreibung |
-|------------|--------|------|--------------|
-| DS18B20 | 8x | GPIO 4 | Temperatursensoren (1-Wire) |
-| DHT22 | 1x | GPIO 18 | Temperatur/Luftfeuchtigkeit |
-| Pull-up | 1x | 4.7kΩ | DS18B20 Bus |
-| Pull-up | 1x | 10kΩ | DHT22 |
-
-### 🏷️ Standard Sensor-Namen
-- **DS18B20_1** → Vorlauf Heizkreis 1
-- **DS18B20_2** → Rücklauf Heizkreis 1  
-- **DS18B20_3** → Vorlauf Heizkreis 2
-- **DS18B20_4** → Rücklauf Heizkreis 2
-- **DS18B20_5** → Warmwasser Speicher
-- **DS18B20_6** → Außentemperatur
-- **DS18B20_7** → Heizraum Ambient
-- **DS18B20_8** → Pufferspeicher Oben
-- **DHT22** → Raumklima Heizraum
-
-## ⚡ Quick Start
-
-### 🚀 **Option 1: Standard-Installation (Sensoren only)**
-```bash
-# Repository klonen
-git clone https://github.com/OliverRebock/Heizung_small.git
-cd Heizung_small
-
-# Basis-Installation (mit optionaler Docker-Auswahl)
-chmod +x install_sensors.sh
-./install_sensors.sh
-
-# Nach Neustart testen
-sudo reboot
-cd ~/sensor-monitor-pi5
-python sensor_monitor.py single
-```
-
-### 🌟 **Option 2: Full-Stack Installation (Alles in einem)**
-```bash
-# Repository klonen
-git clone https://github.com/OliverRebock/Heizung_small.git
-cd Heizung_small
-
-# Komplette Installation: Sensoren + Docker + Grafana + Web-Dashboard
-chmod +x install_full_stack.sh
-./install_full_stack.sh
-
-# Nach Installation verfügbar:
-# 📊 Grafana: http://YOUR_PI_IP:3000
-# 🌐 Web-Dashboard: http://YOUR_PI_IP:5000
-```
-
-## 🐳 Docker Stack
+## 🚀 Schnellstart (One-Command Installation)
 
 ```bash
-# InfluxDB + Grafana starten
-docker compose up -d
+# 1. Repository klonen
+git clone https://github.com/OliverRebock/Pi5-Heizungs-Messer.git
+cd Pi5-Heizungs-Messer
 
-# Status prüfen
-docker compose ps
+# 2. Installation (alles automatisch)
+bash install_simple.sh
+
+## 📋 Sensor Setup
+
+### Hardware Anforderungen
+- **Raspberry Pi 5** (empfohlen)
+- **8x DS18B20** Temperatursensoren (GPIO 4)
+- **1x DHT22** Temperatur/Luftfeuchtigkeit Sensor (GPIO 18)
+- **4.7kΩ Pullup** Widerstände
+
+### Sensor Belegung
+```
+GPIO 4  → DS18B20 Sensoren (8 Stück, One-Wire Bus)
+GPIO 18 → DHT22 Sensor (Temperatur + Luftfeuchtigkeit)
 ```
 
-### Web-Interfaces
-- **Grafana**: http://localhost:3000 (pi5admin/pi5sensors2024)
-- **InfluxDB**: http://localhost:8086 (pi5admin/pi5sensors2024)
+### Professionelle Sensor Labels
+```
+28-0000000001 → HK1 Vorlauf    (Wärmepumpe)
+28-0000000002 → HK1 Rücklauf   (Wärmepumpe)
+28-0000000003 → HK2 Vorlauf    (Obergeschoss)  
+28-0000000004 → HK2 Rücklauf   (Obergeschoss)
+28-0000000005 → HK3 Vorlauf    (Untergeschoss)
+28-0000000006 → HK3 Rücklauf   (Untergeschoss)
+28-0000000007 → HK4 Vorlauf    (Keller)
+28-0000000008 → HK4 Rücklauf   (Keller)
+DHT22         → Heizraum Klima (Temp + Humidity)
+```
+
+## 📦 Installationsmethoden
+
+### 🟢 Methode 1: Ultra-Simple (Empfohlen)
+```bash
+bash install_simple.sh
+```
+- **One-Command Installation**
+- Embedded Python Code (kein Git erforderlich)
+- Alle Dependencies automatisch installiert
+- Sofort einsatzbereit
+
+### 🔵 Methode 2: Git-basiert 
+```bash
+bash install_minimal.sh
+```
+- Git Repository wird geklont
+- Separate Python Files
+- Für Entwicklung geeignet
+
+### 🟡 Methode 3: Docker-Only
+```bash
+bash install_docker_influxdb.sh
+```
+- Nur InfluxDB + Grafana
+- Sensors separat installieren
+
+## 🏠 Home Assistant Integration
+
+### MQTT Setup
+```bash
+# 1. MQTT Broker installieren
+bash install_mqtt.sh
+
+# 2. MQTT Bridge Service einrichten
+bash setup_mqtt_service.sh
+
+# 3. Service starten
+sudo systemctl start pi5-mqtt-bridge
+```
+
+### Auto-Discovery
+- **10 Sensoren** werden automatisch erkannt
+- **Professionelle Namen** (HK1-4 Vorlauf/Rücklauf)
+- **Real-time Updates** alle 30 Sekunden
+- **Availability Status** (Online/Offline)
 
 ## 📊 Grafana Dashboards
 
-- `grafana_dashboard_main.json` - Haupt-Dashboard (4x3 Grid)
-- `grafana_dashboard_mobile.json` - Mobile-optimiert
-- `grafana_dashboard_alarms.json` - Alarm-Überwachung
+### Verfügbare Dashboards
+- **`grafana_dashboard_heizkreise_final.json`** - Hauptdashboard mit 4 Heizkreisen
+- **`grafana_dashboard_main.json`** - Übersicht Dashboard  
+- **`grafana_dashboard_mobile.json`** - Mobile-optimiert
+- **`grafana_dashboard_alarms.json`** - Alarm Dashboard
 
-## 🔧 Konfiguration
+### Dashboard Import
+1. Grafana öffnen: `http://raspberrypi:3000`
+2. Login: `admin` / `admin`
+3. **Import** → JSON File auswählen
+4. **InfluxDB Datasource** auswählen
+5. **Import** klicken
 
+## ⚙️ Konfiguration
+
+### Sensor Labels anpassen
 ```bash
-# Standard Sensor-Monitor
-python sensor_monitor.py single          # Einmalige Messung
-python sensor_monitor.py continuous 30   # Kontinuierlich (30s)
-python sensor_monitor.py parallel        # High-Performance
-
-# Individualisierte Sensoren
-python individualized_sensors.py         # Test individueller Namen
-python influxdb_individualized.py        # InfluxDB mit Namen
-
-# InfluxDB Integration
-python sensor_influxdb.py test          # Verbindung testen
-python sensor_influxdb.py monitor       # Kontinuierlich loggen
-
-# ⚠️ Komplette Deinstallation
-chmod +x reset.sh                        # Script ausführbar machen
-./reset.sh                               # ALLES löschen (mit Warnung!)
+nano /home/pi/pi5-sensors/sensor_labels.json
 ```
 
-### 🏷️ Sensor-Namen individualisieren
-
-**1. Namen in `config.ini` anpassen:**
-```ini
-[labels]
-ds18b20_1 = "Mein Vorlauf Sensor"
-ds18b20_2 = "Mein Rücklauf Sensor"
-ds18b20_3 = "Warmwasser Sensor"
-# ... weitere Sensoren
-dht22 = "Heizraum Klima"
-```
-
-**2. Individualisierte Daten verwenden:**
+### InfluxDB Token ändern
 ```bash
-python individualized_sensors.py        # Test der Namen
-python influxdb_individualized.py       # InfluxDB mit Namen
+nano /home/pi/pi5-sensors/docker-compose.yml
 ```
 
-## 🔍 Troubleshooting
-
-### 1-Wire Sensoren nicht gefunden
+### MQTT Einstellungen
 ```bash
-# 1-Wire Interface aktivieren
-sudo nano /boot/firmware/config.txt
-# Zeile hinzufügen: dtoverlay=w1-gpio,gpiopin=4
-sudo reboot
+nano /home/pi/pi5-sensors/config.ini
 ```
 
-### DHT22 Sensor-Fehler
+## 🔧 Systemd Services
+
+### Sensor Service
 ```bash
-# lgpio Installation prüfen
-pip install lgpio --upgrade
-sudo apt install libgpiod2 libgpiod-dev
+sudo systemctl status pi5-sensors        # Status prüfen
+sudo systemctl restart pi5-sensors       # Neustart
+sudo journalctl -u pi5-sensors -f        # Live Logs
 ```
 
-### Docker Container Probleme
+### MQTT Bridge Service  
 ```bash
-# Logs prüfen
-docker compose logs grafana
-docker compose logs influxdb
-
-# Neu starten
-docker compose restart
+sudo systemctl status pi5-mqtt-bridge    # Status prüfen
+sudo systemctl restart pi5-mqtt-bridge   # Neustart
+sudo journalctl -u pi5-mqtt-bridge -f    # Live Logs
 ```
 
-## 📈 Performance
-
-- **DS18B20 Lesezeit**: ~50ms pro Sensor (parallel)
-- **DHT22 Lesezeit**: ~250ms
-- **Gesamt-Zykluszeit**: ~300ms für alle 7 Sensoren
-- **Speicher-Verbrauch**: ~15MB
-- **CPU-Last**: <5% auf Pi 5
-
-## 🔄 Autostart
-
+### Docker Services
 ```bash
-# Monitoring als Service einrichten
-./setup_autostart_monitoring.sh
-
-# Service-Status prüfen
-sudo systemctl status pi5-sensor-monitoring
+sudo systemctl status docker             # Docker Status
+docker-compose -f /home/pi/pi5-sensors/docker-compose.yml ps
 ```
 
-## 🔥 Komplette Deinstallation
+## 🧪 Testing & Debugging
 
-⚠️ **WARNUNG**: Das `reset.sh` Script entfernt **ALLES** vom Projekt!
-
+### Sensor Test
 ```bash
-# Script ausführbar machen
-chmod +x reset.sh
-
-# Komplette Deinstallation (mit Sicherheitsabfrage)
-./reset.sh
+cd /home/pi/pi5-sensors
+source venv/bin/activate
+python test_sensors_fixed.py
 ```
 
-**Was wird gelöscht:**
-- 🐳 Alle Docker Container, Images und Volumes
-- ⚙️ Alle Systemd Services und Konfigurationen
-- 📁 Alle Projektverzeichnisse und Dateien
-- 🐍 Python Virtual Environments
-- ⏰ Crontab-Einträge
-- 📊 Log-Dateien und Backups
-- 🔧 Optional: Docker komplett deinstallieren
-
-**Was bleibt erhalten:**
-- ✅ GPIO-Konfiguration in `/boot/firmware/config.txt`
-- ✅ System-Python und andere Software
-
-> 💡 Das Script fragt zweimal nach Bestätigung. Kein Neustart erforderlich.
-
-## 📁 Projektstruktur
-
+### MQTT Test
+```bash
+cd /home/pi/pi5-sensors  
+source venv/bin/activate
+python mqtt_bridge.py test
 ```
-Heizung_small/
-├── sensor_monitor.py                    # Haupt-Sensor-Script
-├── sensor_influxdb.py                   # InfluxDB Integration
-├── individualized_sensors.py            # 🆕 Sensor-Individualisierung
-├── influxdb_individualized.py           # 🆕 InfluxDB mit Namen
-├── advanced_monitoring.py               # 🆕 Smart Monitoring & Alerts
-├── web_dashboard.py                     # 🆕 Live Web-Interface
-├── test_sensors_fixed.py                # Hardware Tests
-├── test_comprehensive.py                # 🆕 Pytest Test-Suite
-├── install_sensors.sh                   # Basis-Installation
-├── install_full_stack.sh                # 🆕 Complete Stack Installation
-├── install_docker_influxdb.sh           # Docker Installation
-├── backup_system.sh                     # 🆕 Backup & Recovery
-├── setup_individualized_sensors.sh      # 🆕 Sensor-Naming Setup
-├── reset.sh                             # 🆕 🔥 KOMPLETTE DEINSTALLATION
+
+### InfluxDB Test
+```bash
+# Web Interface
+http://raspberrypi:8086
+
+# CLI Test
+influx auth list
+```
+
+### MQTT Topics überwachen
+```bash
+mosquitto_sub -t 'pi5_heizung/+/state'
+```
+
+## 🌐 Web Interfaces
+
+| Service | URL | Login |
+|---------|-----|-------|
+| **Grafana** | http://raspberrypi:3000 | admin/admin |
+| **InfluxDB** | http://raspberrypi:8086 | admin/password123 |
+
+## 🛠️ Erweiterte Features
+
+### Automatische Sensor-Erkennung
+- **DS18B20 IDs** werden automatisch erkannt
+- **Sensor Labels** können angepasst werden
+- **Fallback-Modi** bei Sensor-Ausfällen
+
+### Pi5 Optimierungen
+- **lgpio Support** für Raspberry Pi 5
+- **Multi-Fallback** Installation
+- **Docker Permissions** automatisch konfiguriert
+- **Systemd Integration** für Autostart
+
+### Professional Monitoring
+- **InfluxDB 2.x** mit Flux Queries
+- **Grafana Alerting** bei kritischen Temperaturen
+- **Home Assistant Automations** 
+- **Mobile Dashboards** für unterwegs
+
+## 🆘 Troubleshooting
+
+### Häufige Probleme
+
+**❌ "No module named lgpio"**
+```bash
+# Automatisch gelöst durch install_simple.sh
+# Oder manuell: pip install lgpio
+```
+
+**❌ "Docker permission denied"**  
+```bash
+sudo usermod -aG docker pi
+newgrp docker
+```
+
+**❌ "No data in Grafana"**
+```bash
+# InfluxDB Status prüfen
+curl -I http://localhost:8086/health
+
+# Sensor Service prüfen
+sudo systemctl status pi5-sensors
+```
+
+**❌ "MQTT not working"**
+```bash
+# MQTT Broker Status
+sudo systemctl status mosquitto
+
+# MQTT Bridge Logs
+sudo journalctl -u pi5-mqtt-bridge -f
+```
 ├── docker-compose.yml                   # Docker Stack
 ├── docker-compose-clean.yml             # 🆕 Optimized Docker
 ├── grafana_dashboard_*.json             # Grafana Dashboards
