@@ -44,6 +44,9 @@ chmod +x install_mqtt_ultra_simple.sh
 # Option 3: DEBUG Version (falls Probleme auftreten)
 curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_debug.sh | bash
 
+# 🚨 MQTT IMPORT ERROR FIX (falls ModuleNotFoundError: mqtt_bridge)
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_mqtt_import_error.sh | bash
+
 # Option 4: Einfache Installation (mit Parameter möglich)
 curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_simple.sh | bash
 
@@ -203,6 +206,12 @@ sudo modprobe w1-therm
 
 ### MQTT Bridge Probleme?
 ```bash
+# 🚨 MQTT IMPORT ERROR FIX (ModuleNotFoundError: mqtt_bridge)
+cd ~/pi5-sensors
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_mqtt_import_error.sh
+chmod +x fix_mqtt_import_error.sh
+./fix_mqtt_import_error.sh
+
 # 🚨 CONFIG.INI REPARIEREN (falls mehrfach installiert)
 cd ~/pi5-sensors
 wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_config_mqtt.sh

@@ -92,23 +92,48 @@ sudo systemctl restart pi5-mqtt-bridge
 echo ""
 echo "🏠 Sende Discovery an Home Assistant..."
 cd ~/pi5-sensors
-source venv/bin/activate
 
-# Discovery senden
+# Aktiviere Python venv falls vorhanden
+if [ -d "venv" ]; then
+    echo "🔧 Aktiviere Python venv..."
+    source venv/bin/activate
+fi
+
+# Prüfe ob mqtt_bridge.py existiert
+if [ ! -f "mqtt_bridge.py" ]; then
+    echo "❌ mqtt_bridge.py nicht gefunden - lade von GitHub..."
+    wget -q https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/mqtt_bridge.py
+fi
+
+# Discovery senden mit Error Handling
 python -c "
 import sys
 sys.path.append('.')
-from mqtt_bridge import Pi5MqttBridge
-import time
 
-bridge = Pi5MqttBridge()
-if bridge.setup_mqtt():
-    time.sleep(2)
-    bridge.publish_discovery()
-    time.sleep(2)
-    print('✅ Discovery gesendet!')
-else:
-    print('❌ MQTT Setup fehlgeschlagen!')
+try:
+    from mqtt_bridge import Pi5MqttBridge
+    import time
+    
+    print('✅ mqtt_bridge erfolgreich importiert')
+    bridge = Pi5MqttBridge()
+    if bridge.setup_mqtt():
+        time.sleep(2)
+        bridge.publish_discovery()
+        time.sleep(2)
+        print('✅ Discovery gesendet!')
+    else:
+        print('❌ MQTT Setup fehlgeschlagen!')
+        
+except ImportError as e:
+    print(f'❌ Import Error: {e}')
+    print('🔧 Führe fix_mqtt_import_error.sh aus um das zu reparieren:')
+    print('   wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_mqtt_import_error.sh')
+    print('   chmod +x fix_mqtt_import_error.sh')
+    print('   ./fix_mqtt_import_error.sh')
+    sys.exit(1)
+except Exception as e:
+    print(f'❌ MQTT Error: {e}')
+    sys.exit(1)
 "
 
 echo ""
