@@ -2,45 +2,56 @@
 # Ultra-Simple MQTT Installation für Pi5 Heizungs Messer
 set -e
 
-echo "🏠 Pi5 MQTT Installation (Ultra-Simple)"
-echo "======================================="
+echo "🏠 Pi5 MQTT Installation für Home Assistant"
+echo "=========================================="
 
-# Parameter
-HA_IP="192.168.1.100"
-echo "🏠 Home Assistant IP: $HA_IP"
-echo "📡 MQTT Broker: Pi5 (localhost, ohne Auth)"
+# Home Assistant Konfiguration abfragen
 echo ""
-
-# 1. Installiere MQTT
-echo "📦 Installiere Mosquitto..."
-sudo apt update
-sudo apt install -y mosquitto mosquitto-clients
-
-# 2. Einfache Config
-echo "⚙️ Konfiguriere MQTT..."
-sudo systemctl stop mosquitto
-
-# Schreibe Config Zeile für Zeile
-sudo bash -c 'cat > /etc/mosquitto/mosquitto.conf' << 'ENDCONFIG'
-listener 1883
-allow_anonymous true
-persistence true
-persistence_location /var/lib/mosquitto/
-ENDCONFIG
-
-# 3. Starte MQTT
-echo "🚀 Starte MQTT Service..."
-sudo systemctl enable mosquitto
-sudo systemctl start mosquitto
-
-if sudo systemctl is-active --quiet mosquitto; then
-    echo "✅ MQTT Broker läuft"
-else
-    echo "❌ MQTT Problem"
+echo "🏠 Home Assistant Konfiguration:"
+read -p "   IP-Adresse von Home Assistant (z.B. 192.168.1.100): " HA_IP
+if [ -z "$HA_IP" ]; then
+    echo "❌ Home Assistant IP ist erforderlich!"
     exit 1
 fi
 
-# 4. Prüfe ob pi5-sensors existiert
+echo ""
+echo "🔐 MQTT Authentifizierung für Home Assistant:"
+read -p "   MQTT Username: " MQTT_USER
+if [ -z "$MQTT_USER" ]; then
+    echo "❌ MQTT Username ist erforderlich!"
+    exit 1
+fi
+
+echo -n "   MQTT Passwort: "
+read -s MQTT_PASS
+echo ""
+if [ -z "$MQTT_PASS" ]; then
+    echo "❌ MQTT Passwort ist erforderlich!"
+    exit 1
+fi
+
+echo ""
+echo "📋 Konfiguration:"
+echo "   🏠 Home Assistant: $HA_IP:1883"
+echo "   🔐 MQTT User: $MQTT_USER"
+echo "   📡 Ziel: Home Assistant MQTT Broker"
+echo ""
+
+read -p "Fortfahren? [J/n]: " CONFIRM
+CONFIRM=${CONFIRM:-j}
+if [[ ! $CONFIRM =~ ^[Jj] ]]; then
+    echo "Installation abgebrochen."
+    exit 0
+fi
+
+# 1. MQTT Client installieren (KEIN Broker!)
+echo "📦 Installiere MQTT Client..."
+sudo apt update
+sudo apt install -y mosquitto-clients
+
+# Wir installieren KEINEN lokalen Broker - verwenden Home Assistant MQTT!
+
+# 2. Prüfe ob pi5-sensors existiert
 if [ ! -d "$HOME/pi5-sensors" ]; then
     echo "❌ pi5-sensors nicht gefunden!"
     echo "   Installiere zuerst: curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_simple.sh | bash"
@@ -49,49 +60,55 @@ fi
 
 cd "$HOME/pi5-sensors"
 
-# 5. Python Packages
+# 3. Python Packages
 echo "📦 Installiere Python MQTT..."
 source venv/bin/activate
 pip install paho-mqtt influxdb-client
 
-# 6. Config erweitern
-echo "📝 Aktualisiere config.ini..."
-cat >> config.ini << 'ENDCONFIG'
+# 4. Config für Home Assistant MQTT erstellen
+echo "📝 Aktualisiere config.ini für Home Assistant MQTT..."
+cat >> config.ini << ENDCONFIG
 
 [mqtt]
-broker = localhost
+broker = ${HA_IP}
 port = 1883
-username = 
-password = 
+username = ${MQTT_USER}
+password = ${MQTT_PASS}
 topic_prefix = pi5_heizung
 
 [homeassistant]
-ip = 192.168.1.100
+ip = ${HA_IP}
 mqtt_discovery = true
 ENDCONFIG
 
-# 7. MQTT Bridge laden
+# 5. MQTT Bridge laden
 echo "📥 Lade MQTT Bridge..."
 curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/mqtt_bridge.py -o mqtt_bridge.py
 curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/setup_mqtt_service.sh -o setup_mqtt_service.sh
 chmod +x setup_mqtt_service.sh
 
-# 8. Service installieren
+# 6. Service installieren
 echo "⚙️ Installiere Service..."
 bash setup_mqtt_service.sh
+
+# 7. MQTT Verbindung testen
+echo "🧪 Teste MQTT Verbindung zu Home Assistant..."
+timeout 10 mosquitto_pub -h "$HA_IP" -u "$MQTT_USER" -P "$MQTT_PASS" -t "pi5_heizung/test" -m "connection_test" || {
+    echo "⚠️ MQTT Test fehlgeschlagen - prüfe Home Assistant MQTT Einstellungen"
+}
 
 echo ""
 echo "🎉 FERTIG!"
 echo "========="
 echo ""
-echo "✅ MQTT Broker: $(hostname -I | awk '{print $1}'):1883"
-echo "✅ Home Assistant: $HA_IP"
-echo "✅ Keine Authentifizierung"
+echo "✅ MQTT Ziel: Home Assistant ($HA_IP:1883)"
+echo "✅ MQTT User: $MQTT_USER"
+echo "✅ Bridge Service installiert"
 echo ""
 echo "🔧 Befehle:"
 echo "   sudo systemctl status pi5-mqtt-bridge"
-echo "   mosquitto_sub -t 'pi5_heizung/+/state'"
+echo "   mosquitto_sub -h $HA_IP -u $MQTT_USER -P $MQTT_PASS -t 'pi5_heizung/+/state'"
 echo ""
-echo "📋 Home Assistant Setup:"
-echo "   MQTT Integration → Broker: $(hostname -I | awk '{print $1}')"
-echo "   Port: 1883, Kein Username/Passwort"
+echo "📋 Home Assistant:"
+echo "   Die Sensoren erscheinen automatisch in Home Assistant!"
+echo "   Prüfe: Einstellungen → Geräte & Services → MQTT"
