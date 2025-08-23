@@ -435,36 +435,11 @@ sudo systemctl daemon-reload
 sudo systemctl enable pi5-sensors.service
 
 # =============================================================================
-# 9. DOCKER CONTAINER STARTEN  
+# 9. GRAFANA KONFIGURATION VORBEREITEN
 # =============================================================================
-echo "🚀 Starte Docker Container..."
-if command -v docker &> /dev/null && sudo systemctl is-active --quiet docker; then
-    
-    # Prüfe Docker-Berechtigung mit tatsächlichem Test
-    if docker info &>/dev/null; then
-        echo "   ✅ Docker Berechtigung OK"
-        docker compose up -d
-    else
-        echo "   ⚠️ Docker Permission Problem - verwende sudo"
-        echo "   💡 Tipp: Nach Neustart funktioniert Docker ohne sudo"
-        sudo docker compose up -d
-        
-        # Zusätzlich User zur docker group hinzufügen (falls nicht schon geschehen)
-        if ! groups $USER | grep -q docker; then
-            sudo usermod -aG docker $USER
-            echo "   ✅ User $USER zur docker group hinzugefügt"
-        fi
-    fi
-    echo "   ✅ Container gestartet"
-    
-    # Warte auf InfluxDB
-    echo "⏳ Warte auf InfluxDB..."
-    sleep 15
-    
-    # Grafana Konfiguration für Subpath Support
-    echo "🔧 Grafana für Subpath konfigurieren..."
-    mkdir -p grafana
-    cat > grafana/grafana.ini << 'EOL'
+echo "🔧 Grafana für Subpath konfigurieren..."
+mkdir -p grafana
+cat > grafana/grafana.ini << 'EOL'
 # Grafana Configuration für Pi 5 Sensor Monitor
 # Keine Authentifizierung für lokalen Betrieb
 
@@ -514,21 +489,48 @@ logs = /var/log/grafana
 plugins = /var/lib/grafana/plugins
 provisioning = /etc/grafana/provisioning
 EOL
-    echo "   ✅ Grafana konfiguriert (Subpath Support)"
+echo "   ✅ Grafana konfiguriert (Subpath Support)"
+
+# =============================================================================
+# 10. DOCKER CONTAINER STARTEN  
+# =============================================================================
+echo "🚀 Starte Docker Container..."
+if command -v docker &> /dev/null && sudo systemctl is-active --quiet docker; then
+    
+    # Prüfe Docker-Berechtigung mit tatsächlichem Test
+    if docker info &>/dev/null; then
+        echo "   ✅ Docker Berechtigung OK"
+        docker compose up -d
+    else
+        echo "   ⚠️ Docker Permission Problem - verwende sudo"
+        echo "   💡 Tipp: Nach Neustart funktioniert Docker ohne sudo"
+        sudo docker compose up -d
+        
+        # Zusätzlich User zur docker group hinzufügen (falls nicht schon geschehen)
+        if ! groups $USER | grep -q docker; then
+            sudo usermod -aG docker $USER
+            echo "   ✅ User $USER zur docker group hinzugefügt"
+        fi
+    fi
+    echo "   ✅ Container gestartet"
+    
+    # Warte auf InfluxDB
+    echo "⏳ Warte auf InfluxDB..."
+    sleep 15
     
 else
     echo "   ⚠️  Docker nicht verfügbar - manueller Start nötig"
 fi
 
 # =============================================================================
-# 10. TEST
+# 11. TEST
 # =============================================================================
 echo "🧪 Teste Sensoren..."
 source venv/bin/activate
 python sensor_reader.py test
 
 # =============================================================================
-# 11. FERTIG!
+# 12. FERTIG!
 # =============================================================================
 echo ""
 echo "🎉 INSTALLATION ABGESCHLOSSEN!"
