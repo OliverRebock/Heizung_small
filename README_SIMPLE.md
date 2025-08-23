@@ -23,6 +23,10 @@ curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/inst
 - **📊 Grafana**: `http://PI_IP:3000` (kein Login!)
 - **🗄️ InfluxDB**: `http://PI_IP:8086` (admin/pi5sensors2024)
 
+**Neue Features:**
+- ✨ **Subpath Support**: Grafana läuft auch unter `/grafana/` Pfad
+- 🔧 **Professionelle Konfiguration**: Optimiert für Reverse Proxy Setup
+
 ## 🏷️ Sensornamen ändern
 
 ```bash

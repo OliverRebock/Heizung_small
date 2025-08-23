@@ -435,6 +435,61 @@ if command -v docker &> /dev/null && sudo systemctl is-active --quiet docker; th
     echo "⏳ Warte auf InfluxDB..."
     sleep 15
     
+    # Grafana Konfiguration für Subpath Support
+    echo "🔧 Grafana für Subpath konfigurieren..."
+    mkdir -p grafana
+    cat > grafana/grafana.ini << 'EOL'
+# Grafana Configuration für Pi 5 Sensor Monitor
+# Keine Authentifizierung für lokalen Betrieb
+
+[server]
+http_port = 3000
+domain = localhost
+root_url = %(protocol)s://%(domain)s/grafana/
+serve_from_sub_path = true
+enable_gzip = true
+
+[auth]
+disable_login_form = true
+disable_signout_menu = true
+
+[auth.anonymous]
+enabled = true
+org_name = Pi5SensorOrg
+org_role = Admin
+hide_version = false
+
+[users]
+allow_sign_up = false
+allow_org_create = false
+auto_assign_org = true
+auto_assign_org_role = Admin
+default_theme = dark
+
+[security]
+allow_embedding = true
+cookie_secure = false
+cookie_samesite = lax
+
+[plugins]
+enable_alpha = false
+app_tls_skip_verify_insecure = false
+
+[install]
+check_for_updates = false
+
+[log]
+mode = console
+level = info
+
+[paths]
+data = /var/lib/grafana
+logs = /var/log/grafana
+plugins = /var/lib/grafana/plugins
+provisioning = /etc/grafana/provisioning
+EOL
+    echo "   ✅ Grafana konfiguriert (Subpath Support)"
+    
 else
     echo "   ⚠️  Docker nicht verfügbar - manueller Start nötig"
 fi
