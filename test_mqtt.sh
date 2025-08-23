@@ -22,9 +22,11 @@ BROKER=$(grep "^broker" "$CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
 PORT=$(grep "^port" "$CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
 USERNAME=$(grep "^username" "$CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
 PASSWORD=$(grep "^password" "$CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
+HA_IP=$(grep "^ip" "$CONFIG_FILE" | cut -d'=' -f2 | tr -d ' ')
 
 echo "📋 MQTT Konfiguration:"
-echo "   Broker: $BROKER:$PORT"
+echo "   MQTT Broker: $BROKER:$PORT"
+echo "   Home Assistant: $HA_IP"
 if [ -n "$USERNAME" ]; then
     echo "   Auth: $USERNAME / ***"
     AUTH_PARAMS="-u $USERNAME -P $PASSWORD"
@@ -33,19 +35,37 @@ else
     AUTH_PARAMS=""
 fi
 
+# Bestimme ob lokaler oder HA Broker
+PI5_IP=$(hostname -I | awk '{print $1}')
+if [ "$BROKER" = "$HA_IP" ]; then
+    BROKER_TYPE="Home Assistant"
+    echo "   🏠 Konfiguration: Pi5 sendet an Home Assistant MQTT"
+elif [ "$BROKER" = "$PI5_IP" ] || [ "$BROKER" = "localhost" ]; then
+    BROKER_TYPE="Pi5 lokal"
+    echo "   🤖 Konfiguration: Pi5 als lokaler MQTT Broker"
+else
+    BROKER_TYPE="Extern"
+    echo "   📡 Konfiguration: Externer MQTT Broker"
+fi
+
 echo ""
 echo "🔄 Teste MQTT Verbindung..."
 
-# 1. Mosquitto Service Status
+# 1. Mosquitto Service Status (nur bei lokalem Broker)
 echo ""
-echo "1. 🦟 Mosquitto Service Status:"
-if systemctl is-active --quiet mosquitto; then
-    echo "   ✅ Mosquitto läuft"
+if [ "$BROKER_TYPE" = "Pi5 lokal" ]; then
+    echo "1. 🦟 Mosquitto Service Status:"
+    if systemctl is-active --quiet mosquitto; then
+        echo "   ✅ Mosquitto läuft lokal"
+    else
+        echo "   ❌ Mosquitto läuft nicht!"
+        echo "   Starte Mosquitto..."
+        sudo systemctl start mosquitto
+        sleep 2
+    fi
 else
-    echo "   ❌ Mosquitto läuft nicht!"
-    echo "   Starte Mosquitto..."
-    sudo systemctl start mosquitto
-    sleep 2
+    echo "1. 🏠 Home Assistant MQTT Broker Test:"
+    echo "   📡 Teste Verbindung zu $BROKER..."
 fi
 
 # 2. Port Test
