@@ -1,3 +1,10 @@
+# 📊 DOCKER HEALTHCHECKS & LOGGING (MUSS AM ANFANG STEHEN!)
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   influxdb:
     image: influxdb:2.7
@@ -69,10 +76,3 @@ volumes:
       type: none
       o: bind
       device: /opt/docker-data/grafana
-
-# 📊 DOCKER HEALTHCHECKS & LOGGING
-x-logging: &default-logging
-  driver: "json-file"
-  options:
-    max-size: "10m"
-    max-file: "3"
