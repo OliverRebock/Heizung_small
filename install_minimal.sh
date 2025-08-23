@@ -251,14 +251,14 @@ ds18b20_count = 8
 dht22_gpio = 18
 
 [labels]
-ds18b20_1 = Vorlauf Heizkreis 1
-ds18b20_2 = Rücklauf Heizkreis 1
-ds18b20_3 = Vorlauf Heizkreis 2
-ds18b20_4 = Rücklauf Heizkreis 2
-ds18b20_5 = Warmwasser Speicher
-ds18b20_6 = Außentemperatur
-ds18b20_7 = Heizraum Ambient
-ds18b20_8 = Pufferspeicher Oben
+ds18b20_1 = RL WP
+ds18b20_2 = VL UG
+ds18b20_3 = VL WP
+ds18b20_4 = RL UG
+ds18b20_5 = RL OG
+ds18b20_6 = RL Keller
+ds18b20_7 = VL OG
+ds18b20_8 = VL Keller
 dht22 = Raumklima Heizraum
 EOF
 

@@ -1,4 +1,4 @@
-# 🌡️ Heizung Small - Pi 5 Sensor Monitor
+# 🌡️ Pi5 Heizungs Messer - Professional Heat Pump Monitor
 
 Ein **minimales** IoT-Monitoring-System für Raspberry Pi 5 mit 8x DS18B20 + 1x DHT22 Sensoren.
 

@@ -1,4 +1,4 @@
-# 📊 Grafana Dashboard Templates für Pi 5 Sensor Monitor
+# 📊 Grafana Dashboard Templates für Pi5 Heizungs Messer
 
 Diese Verzeichnis enthält professionelle Grafana Dashboard-Templates für das Raspberry Pi 5 Sensor-Monitor System.
 

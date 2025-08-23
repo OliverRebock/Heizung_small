@@ -1,4 +1,4 @@
-# 🌡️ Pi5 Ultra-Minimal Sensor Monitor
+# 🌡️ Pi5 Heizungs Messer - Ultra-Minimal
 
 **Ein-Befehl Installation** für 9 Sensoren am Raspberry Pi 5.
 
@@ -31,10 +31,15 @@ nano ~/pi5-sensors/config.ini
 
 ```ini
 [labels]
-ds18b20_1 = Mein Sensor Name
-ds18b20_2 = Anderer Name
-# ... 
-dht22 = Raumklima
+ds18b20_1 = RL WP
+ds18b20_2 = VL UG  
+ds18b20_3 = VL WP
+ds18b20_4 = RL UG
+ds18b20_5 = RL OG
+ds18b20_6 = RL Keller
+ds18b20_7 = VL OG
+ds18b20_8 = VL Keller
+dht22 = Raumklima Heizraum
 ```
 
 Danach: `sudo systemctl restart pi5-sensors`

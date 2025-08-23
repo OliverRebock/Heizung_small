@@ -1,4 +1,4 @@
-# 🌡️ Pi 5 Sensor Monitor - MINIMAL
+# 🌡️ Pi5 Heizungs Messer - MINIMAL
 
 **Ein-Klick Installation** für Raspberry Pi 5 mit **9 Sensoren**: 8x DS18B20 + 1x DHT22 (Temp + Humidity = 10 Messwerte).
 
@@ -39,10 +39,15 @@ chmod +x install_minimal.sh
 
 ```ini
 [labels]
-ds18b20_1 = Mein Vorlauf Sensor
-ds18b20_2 = Mein Rücklauf Sensor
-ds18b20_3 = Warmwasser Sensor
-# ... anpassen nach Bedarf
+ds18b20_1 = RL WP
+ds18b20_2 = VL UG
+ds18b20_3 = VL WP
+ds18b20_4 = RL UG
+ds18b20_5 = RL OG
+ds18b20_6 = RL Keller
+ds18b20_7 = VL OG
+ds18b20_8 = VL Keller
+dht22 = Raumklima Heizraum
 ```
 
 **Danach**: `sudo systemctl restart pi5-sensor-minimal`

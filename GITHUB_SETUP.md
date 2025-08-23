@@ -6,7 +6,7 @@
 2. **Klicke auf "New Repository"** (grüner Button)
 3. **Repository-Einstellungen**:
    - **Repository name**: `Heizung_small`
-   - **Description**: `Raspberry Pi 5 optimized sensor monitoring for 6x DS18B20 + 1x DHT22`
+   - **Description**: `Raspberry Pi 5 optimized heating system monitoring for 8x DS18B20 + 1x DHT22`
    - **Visibility**: Public ✅
    - **Initialize repository**: ❌ NICHT ankreuzen (wir haben bereits Code)
    - **Add .gitignore**: ❌ NICHT wählen
@@ -47,7 +47,7 @@ Nach dem Push kannst du auf GitHub ein Release erstellen:
 1. Gehe zu "Releases" 
 2. Klicke "Create a new release"
 3. Wähle Tag "v1.0.0"
-4. Titel: "Raspberry Pi 5 Sensor Monitor v1.0.0"
+4. Titel: "Raspberry Pi 5 Heizungs Messer v1.0.0"
 
 ## 📊 Repository-Features
 

@@ -284,15 +284,15 @@ org = pi5org
 bucket = sensors
 
 [labels]
-# 🏷️ Passe die Sensornamen hier an
-ds18b20_1 = Vorlauf Heizkreis
-ds18b20_2 = Rücklauf Heizkreis  
-ds18b20_3 = Warmwasser Speicher
-ds18b20_4 = Außentemperatur
-ds18b20_5 = Heizraum
-ds18b20_6 = Pufferspeicher Oben
-ds18b20_7 = Pufferspeicher Mitte
-ds18b20_8 = Pufferspeicher Unten
+# 🏷️ Professionelle Heizungsanlage Sensoren
+ds18b20_1 = RL WP
+ds18b20_2 = VL UG
+ds18b20_3 = VL WP
+ds18b20_4 = RL UG
+ds18b20_5 = RL OG
+ds18b20_6 = RL Keller
+ds18b20_7 = VL OG
+ds18b20_8 = VL Keller
 dht22 = Raumklima Heizraum
 EOF
 
