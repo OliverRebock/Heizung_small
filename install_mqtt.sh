@@ -35,7 +35,8 @@ if [ "$MQTT_METHOD" = "1" ]; then
     echo ""
     echo "🔐 Home Assistant MQTT Authentifizierung:"
     read -p "   MQTT Username für Home Assistant: " MQTT_USER
-    read -s -p "   MQTT Passwort für Home Assistant: " MQTT_PASS
+    echo -n "   MQTT Passwort für Home Assistant: "
+    read -s MQTT_PASS
     echo ""
     
     MQTT_BROKER_IP="$HA_IP"
@@ -53,7 +54,8 @@ else
 
     if [[ $NEED_AUTH =~ ^[Jj] ]]; then
         read -p "   MQTT Username: " MQTT_USER
-        read -s -p "   MQTT Passwort: " MQTT_PASS
+        echo -n "   MQTT Passwort: "
+        read -s MQTT_PASS
         echo ""
         USE_AUTH=true
     else

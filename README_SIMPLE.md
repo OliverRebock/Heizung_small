@@ -23,7 +23,10 @@ curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/inst
 Für Home Assistant MQTT Integration:
 
 ```bash
-# MQTT Bridge installieren 
+# Option 1: Einfache Installation (empfohlen)
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_simple.sh | bash
+
+# Option 2: Interaktive Installation
 curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt.sh | bash
 
 # Service aktivieren
