@@ -199,11 +199,26 @@ sudo systemctl restart pi5-mqtt-bridge
 sudo systemctl status pi5-mqtt-bridge
 sudo journalctl -u pi5-mqtt-bridge -f
 
-# 🏠 HOME ASSISTANT AUTO-DISCOVERY TESTEN
+# 🏠 HOME ASSISTANT AUTO-DISCOVERY PROBLEME?
 cd ~/pi5-sensors
+
+# 1. Discovery Debug ausführen
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/debug_mqtt_discovery.sh
+chmod +x debug_mqtt_discovery.sh
+./debug_mqtt_discovery.sh
+
+# 2. Home Assistant Discovery Fix
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_home_assistant_discovery.py
+python fix_home_assistant_discovery.py
+
+# 3. Original Test
 wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/test_home_assistant.sh
 chmod +x test_home_assistant.sh
 ./test_home_assistant.sh
+
+# 4. MQTT Service prüfen
+sudo systemctl status pi5-mqtt-bridge
+sudo journalctl -u pi5-mqtt-bridge -f
 
 # MQTT Verbindung testen
 cd ~/pi5-sensors
