@@ -31,23 +31,21 @@ sudo apt install -y mosquitto mosquitto-clients
 echo "⚙️ Konfiguriere MQTT..."
 sudo systemctl stop mosquitto
 
-# Mosquitto Config
-sudo tee /etc/mosquitto/mosquitto.conf > /dev/null << 'EOF'
-# MQTT Broker Konfiguration für Pi5 Heizungs Messer
-listener 1883
-allow_anonymous true
-persistence true
-persistence_location /var/lib/mosquitto/
-EOF
+# Mosquitto Config erstellen
+echo "# MQTT Broker Konfiguration für Pi5 Heizungs Messer" | sudo tee /etc/mosquitto/mosquitto.conf > /dev/null
+echo "listener 1883" | sudo tee -a /etc/mosquitto/mosquitto.conf > /dev/null
+echo "allow_anonymous true" | sudo tee -a /etc/mosquitto/mosquitto.conf > /dev/null
+echo "persistence true" | sudo tee -a /etc/mosquitto/mosquitto.conf > /dev/null
+echo "persistence_location /var/lib/mosquitto/" | sudo tee -a /etc/mosquitto/mosquitto.conf > /dev/null
 
 # Falls Authentication gewünscht
 if [ -n "$MQTT_USER" ] && [ -n "$MQTT_PASS" ]; then
     echo "🔐 Aktiviere MQTT Authentifizierung..."
     sudo mosquitto_passwd -c -b /etc/mosquitto/passwd "$MQTT_USER" "$MQTT_PASS"
-    sudo tee -a /etc/mosquitto/mosquitto.conf > /dev/null << 'EOF'
-allow_anonymous false
-password_file /etc/mosquitto/passwd
-EOF
+    echo "allow_anonymous false" | sudo tee -a /etc/mosquitto/mosquitto.conf > /dev/null
+    echo "password_file /etc/mosquitto/passwd" | sudo tee -a /etc/mosquitto/mosquitto.conf > /dev/null
+    echo "   ✅ User $MQTT_USER erstellt"
+fi
     echo "   ✅ User $MQTT_USER erstellt"
 fi
 
@@ -82,19 +80,19 @@ pip install paho-mqtt influxdb-client
 
 # 5. KONFIGURATION ERSTELLEN
 echo "📝 Erstelle MQTT Konfiguration..."
-cat >> config.ini << EOF
 
-[mqtt]
-broker = localhost
-port = 1883
-username = ${MQTT_USER}
-password = ${MQTT_PASS}
-topic_prefix = pi5_heizung
-
-[homeassistant]
-ip = ${HA_IP}
-mqtt_discovery = true
-EOF
+# Config sicher erstellen
+echo "" >> config.ini
+echo "[mqtt]" >> config.ini
+echo "broker = localhost" >> config.ini
+echo "port = 1883" >> config.ini
+echo "username = ${MQTT_USER}" >> config.ini
+echo "password = ${MQTT_PASS}" >> config.ini
+echo "topic_prefix = pi5_heizung" >> config.ini
+echo "" >> config.ini
+echo "[homeassistant]" >> config.ini
+echo "ip = ${HA_IP}" >> config.ini
+echo "mqtt_discovery = true" >> config.ini
 
 echo "   ✅ config.ini aktualisiert"
 

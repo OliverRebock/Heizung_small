@@ -23,15 +23,17 @@ curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/inst
 Für Home Assistant MQTT Integration:
 
 ```bash
-# Option 1: Einfache Installation (empfohlen)
+# Option 1: Ultra-Einfach (funktioniert garantiert)
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_ultra_simple.sh | bash
+
+# Option 2: Einfache Installation 
 curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_simple.sh | bash
 
-# Option 2: Interaktive Installation
+# Option 3: Interaktive Installation
 curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt.sh | bash
 
-# Service aktivieren
-sudo systemctl enable pi5-mqtt-bridge
-sudo systemctl start pi5-mqtt-bridge
+# Service aktivieren (automatisch gemacht)
+sudo systemctl status pi5-mqtt-bridge
 ```
 
 **Features:**
