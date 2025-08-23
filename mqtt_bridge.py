@@ -12,6 +12,8 @@ Autor: Pi5 Heizungs Messer Project
 import json
 import time
 import logging
+import os
+import sys
 from datetime import datetime
 from typing import Dict, List, Optional
 import configparser
@@ -49,7 +51,27 @@ class Pi5MqttBridge:
     def __init__(self, config_file='config.ini'):
         """Initialisiere MQTT Bridge"""
         self.config = configparser.ConfigParser()
-        self.config.read(config_file)
+        
+        # Config-Datei suchen
+        config_paths = [
+            config_file,
+            '/home/pi/pi5-sensors/config.ini',
+            './mqtt_config.ini',
+            './config.ini'
+        ]
+        
+        config_found = False
+        for path in config_paths:
+            if os.path.exists(path):
+                self.config.read(path)
+                config_found = True
+                logger.info(f"📋 Konfiguration geladen: {path}")
+                break
+        
+        if not config_found:
+            logger.error("❌ Keine Konfigurationsdatei gefunden!")
+            logger.error("   Erwartete Pfade: " + ", ".join(config_paths))
+            sys.exit(1)
         
         # MQTT Konfiguration
         self.mqtt_broker = self.config.get('mqtt', 'broker', fallback='localhost')
@@ -57,6 +79,10 @@ class Pi5MqttBridge:
         self.mqtt_username = self.config.get('mqtt', 'username', fallback='')
         self.mqtt_password = self.config.get('mqtt', 'password', fallback='')
         self.mqtt_prefix = self.config.get('mqtt', 'topic_prefix', fallback='pi5_heizung')
+        
+        # Home Assistant Konfiguration
+        self.ha_ip = self.config.get('homeassistant', 'ip', fallback='192.168.1.100')
+        self.ha_discovery = self.config.getboolean('homeassistant', 'mqtt_discovery', fallback=True)
         
         # InfluxDB Konfiguration
         self.influx_url = f"http://{self.config.get('database', 'host', fallback='localhost')}:8086"
@@ -84,8 +110,13 @@ class Pi5MqttBridge:
         
         logger.info("🌡️ Pi5 MQTT Bridge initialisiert")
         logger.info(f"   📡 MQTT Broker: {self.mqtt_broker}:{self.mqtt_port}")
+        logger.info(f"   🏠 Home Assistant: {self.ha_ip}")
         logger.info(f"   🗄️ InfluxDB: {self.influx_url}")
         logger.info(f"   🏷️ Sensoren: {len(self.sensor_labels)}")
+        if self.mqtt_username:
+            logger.info(f"   🔐 MQTT Auth: {self.mqtt_username}")
+        else:
+            logger.info("   🔓 MQTT Auth: Keine")
 
     def setup_mqtt(self):
         """MQTT Client setup"""

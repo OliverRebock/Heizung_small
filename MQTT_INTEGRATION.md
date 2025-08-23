@@ -16,10 +16,15 @@ Die MQTT Integration ermöglicht es, alle Temperatur-Sensoren des Pi5 Heizungs M
 
 ## 🚀 Schnellstart
 
-### 1. MQTT Broker installieren
+### 1. MQTT Broker installieren (Interaktiv)
 ```bash
 bash install_mqtt.sh
 ```
+
+**Das Script fragt dich:**
+- 🏠 **Home Assistant IP** (z.B. 192.168.1.100)
+- 🔐 **MQTT Authentifizierung** (Username/Passwort oder ohne)
+- 📡 **Pi5 IP** wird automatisch erkannt
 
 ### 2. MQTT Bridge installieren
 ```bash
@@ -31,10 +36,16 @@ bash setup_mqtt_service.sh
 sudo systemctl start pi5-mqtt-bridge
 ```
 
-### 4. Home Assistant konfigurieren
-- MQTT Integration aktivieren (falls nicht bereits aktiv)
-- Broker IP: IP-Adresse deines Raspberry Pi 5
-- Port: 1883
+### 4. MQTT Verbindung testen
+```bash
+bash test_mqtt.sh
+```
+
+### 5. Home Assistant konfigurieren
+- MQTT Integration aktivieren
+- **Broker IP**: Die vom Script angezeigte Pi5 IP
+- **Port**: 1883
+- **Username/Passwort**: Falls konfiguriert
 - Sensoren werden automatisch erkannt!
 
 ## 📊 Verfügbare Sensoren
@@ -54,26 +65,59 @@ sudo systemctl start pi5-mqtt-bridge
 
 ## ⚙️ Konfiguration
 
+### Interaktive Installation
+Das `install_mqtt.sh` Script führt dich durch die Konfiguration:
+
+```bash
+🏠 Home Assistant Konfiguration:
+   IP-Adresse deines Home Assistant (z.B. 192.168.1.100): 192.168.1.100
+
+🔐 MQTT Authentifizierung:
+   Brauchst du MQTT Username/Passwort? [j/N]: n
+
+✅ Konfiguration:
+   🏠 Home Assistant IP: 192.168.1.100
+   🤖 Pi5 IP (MQTT Broker): 192.168.1.50
+   🔐 MQTT Auth: Nein
+```
+
 ### MQTT Bridge Konfiguration (`config.ini`)
+Nach der Installation wird automatisch eine Konfigurationsdatei erstellt:
+
 ```ini
 [mqtt]
-broker = localhost        # MQTT Broker IP
-port = 1883              # MQTT Port
-username =               # Optional: Username
-password =               # Optional: Passwort
+broker = 192.168.1.50        # Deine Pi5 IP (automatisch)
+port = 1883                  # MQTT Port
+username =                   # Dein MQTT Username (falls gewählt)
+password =                   # Dein MQTT Passwort (falls gewählt)
 topic_prefix = pi5_heizung
 
+[homeassistant]
+ip = 192.168.1.100          # Deine Home Assistant IP
+mqtt_discovery = true
+
 [database]
-host = localhost         # InfluxDB Host
-token = pi5-token-2024   # InfluxDB Token
-org = pi5org             # InfluxDB Organisation
-bucket = sensors         # InfluxDB Bucket
+host = localhost            # InfluxDB auf Pi5
+token = pi5-token-2024      # InfluxDB Token
+org = pi5org                # InfluxDB Organisation
+bucket = sensors            # InfluxDB Bucket
 
 [labels]
-# Sensor Labels - müssen mit InfluxDB Namen übereinstimmen!
+# Sensor Labels - werden automatisch gesetzt
 28-0000000001 = HK1 Vorlauf
 28-0000000002 = HK1 Rücklauf
 ...
+```
+
+### Manuelle Anpassung
+Falls du später Einstellungen ändern möchtest:
+
+```bash
+# Konfiguration bearbeiten
+nano /home/pi/pi5-sensors/config.ini
+
+# MQTT Bridge neu starten
+sudo systemctl restart pi5-mqtt-bridge
 ```
 
 ### Service Commands
