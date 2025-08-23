@@ -23,13 +23,16 @@ curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/inst
 Für Home Assistant MQTT Integration:
 
 ```bash
-# Option 1: Ultra-Einfach (mit Abfrage von HA IP + MQTT Credentials)
+# Option 1: Ultra-Einfach (fragt HA IP + MQTT Credentials ab)
 curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_ultra_simple.sh | bash
 
-# Option 2: Einfache Installation (mit Parameter möglich)
+# Option 2: DEBUG Version (falls Probleme auftreten)
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_debug.sh | bash
+
+# Option 3: Einfache Installation (mit Parameter möglich)
 curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_simple.sh | bash
 
-# Option 3: Interaktive Installation
+# Option 4: Interaktive Installation
 curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt.sh | bash
 
 # Service Status prüfen
@@ -38,7 +41,7 @@ sudo systemctl status pi5-mqtt-bridge
 
 **Wichtig:** 
 - 📡 **Sendet direkt an Home Assistant MQTT Broker** (nicht lokaler Broker!)
-- 🏠 **Home Assistant IP** wird abgefragt
+- 🏠 **Home Assistant IP** wird interaktiv abgefragt
 - 🔐 **MQTT Username/Passwort** für Home Assistant wird abgefragt
 
 **Features:**
