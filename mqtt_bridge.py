@@ -178,14 +178,30 @@ class Pi5MqttBridge:
         """MQTT Connect Callback"""
         if rc == 0:
             logger.info("✅ MQTT Broker verbunden")
+            # Status senden
+            self.mqtt_client.publish(f"{self.mqtt_prefix}/status", "online", retain=True)
             # Home Assistant Auto-Discovery senden
+            logger.info("🏠 Sende Home Assistant Auto-Discovery...")
             self.publish_discovery()
         else:
             logger.error(f"❌ MQTT Verbindung fehlgeschlagen: {rc}")
+            if rc == 1:
+                logger.error("   → Falsche Protokoll-Version")
+            elif rc == 2:
+                logger.error("   → Ungültige Client-ID")
+            elif rc == 3:
+                logger.error("   → Server nicht verfügbar")
+            elif rc == 4:
+                logger.error("   → Falsche Anmeldedaten")
+            elif rc == 5:
+                logger.error("   → Nicht autorisiert")
 
     def on_mqtt_disconnect(self, client, userdata, rc):
         """MQTT Disconnect Callback"""
-        logger.warning(f"⚠️ MQTT Verbindung getrennt: {rc}")
+        if rc != 0:
+            logger.warning(f"⚠️ MQTT Verbindung getrennt: {rc}")
+        else:
+            logger.info("👋 MQTT Verbindung sauber getrennt")
 
     def on_mqtt_publish(self, client, userdata, mid):
         """MQTT Publish Callback"""
@@ -193,69 +209,104 @@ class Pi5MqttBridge:
 
     def publish_discovery(self):
         """Home Assistant Auto-Discovery konfigurieren"""
-        logger.info("🏠 Sende Home Assistant Auto-Discovery...")
-        
-        for sensor_id, sensor_name in self.sensor_labels.items():
-            if sensor_id == 'dht22':
-                # DHT22 Temperatur
-                self.publish_sensor_discovery(
-                    sensor_id="dht22_temperature",
-                    sensor_name=f"{sensor_name} Temperatur",
-                    device_class="temperature",
-                    unit_of_measurement="°C",
-                    value_template="{{ value_json.temperature }}"
-                )
-                
-                # DHT22 Luftfeuchtigkeit
-                self.publish_sensor_discovery(
-                    sensor_id="dht22_humidity", 
-                    sensor_name=f"{sensor_name} Luftfeuchtigkeit",
-                    device_class="humidity",
-                    unit_of_measurement="%",
-                    value_template="{{ value_json.humidity }}"
-                )
-            else:
-                # DS18B20 Temperatursensoren
-                self.publish_sensor_discovery(
-                    sensor_id=sensor_id,
-                    sensor_name=sensor_name,
-                    device_class="temperature",
-                    unit_of_measurement="°C",
-                    value_template="{{ value_json.temperature }}"
-                )
+        try:
+            logger.info("🏠 Sende Home Assistant Auto-Discovery...")
+            discovery_count = 0
+            
+            for sensor_id, sensor_name in self.sensor_labels.items():
+                if sensor_id == 'dht22':
+                    # DHT22 Temperatur
+                    success1 = self.publish_sensor_discovery(
+                        sensor_id="dht22_temperature",
+                        sensor_name=f"{sensor_name} Temperatur",
+                        device_class="temperature",
+                        unit_of_measurement="°C",
+                        value_template="{{ value_json.temperature }}",
+                        icon="mdi:thermometer"
+                    )
+                    
+                    # DHT22 Luftfeuchtigkeit
+                    success2 = self.publish_sensor_discovery(
+                        sensor_id="dht22_humidity", 
+                        sensor_name=f"{sensor_name} Luftfeuchtigkeit",
+                        device_class="humidity",
+                        unit_of_measurement="%",
+                        value_template="{{ value_json.humidity }}",
+                        icon="mdi:water-percent"
+                    )
+                    
+                    if success1 and success2:
+                        discovery_count += 2
+                else:
+                    # DS18B20 Temperatursensoren
+                    success = self.publish_sensor_discovery(
+                        sensor_id=sensor_id,
+                        sensor_name=sensor_name,
+                        device_class="temperature",
+                        unit_of_measurement="°C",
+                        value_template="{{ value_json.temperature }}",
+                        icon="mdi:thermometer"
+                    )
+                    
+                    if success:
+                        discovery_count += 1
+            
+            logger.info(f"✅ {discovery_count} Discovery-Nachrichten gesendet")
+            
+            # Kurz warten und dann erste Daten senden
+            time.sleep(1)
+            self.run_once()
+            
+        except Exception as e:
+            logger.error(f"❌ Fehler bei Auto-Discovery: {e}")
 
     def publish_sensor_discovery(self, sensor_id: str, sensor_name: str, 
                                 device_class: str, unit_of_measurement: str,
-                                value_template: str):
+                                value_template: str, icon: str = None):
         """Einzelnen Sensor für Home Assistant Discovery konfigurieren"""
         
-        discovery_topic = f"homeassistant/sensor/{self.mqtt_prefix}_{sensor_id}/config"
-        state_topic = f"{self.mqtt_prefix}/{sensor_id}/state"
-        
-        discovery_payload = {
-            "name": sensor_name,
-            "unique_id": f"{self.mqtt_prefix}_{sensor_id}",
-            "state_topic": state_topic,
-            "device_class": device_class,
-            "unit_of_measurement": unit_of_measurement,
-            "value_template": value_template,
-            "device": self.device_info,
-            "availability": [
-                {
-                    "topic": f"{self.mqtt_prefix}/status",
-                    "payload_available": "online",
-                    "payload_not_available": "offline"
-                }
-            ]
-        }
-        
-        self.mqtt_client.publish(
-            discovery_topic,
-            json.dumps(discovery_payload),
-            retain=True
-        )
-        
-        logger.debug(f"📡 Discovery: {sensor_name} → {discovery_topic}")
+        try:
+            discovery_topic = f"homeassistant/sensor/{self.mqtt_prefix}_{sensor_id}/config"
+            state_topic = f"{self.mqtt_prefix}/{sensor_id}/state"
+            
+            discovery_payload = {
+                "name": sensor_name,
+                "unique_id": f"{self.mqtt_prefix}_{sensor_id}",
+                "state_topic": state_topic,
+                "device_class": device_class,
+                "unit_of_measurement": unit_of_measurement,
+                "value_template": value_template,
+                "device": self.device_info,
+                "availability": [
+                    {
+                        "topic": f"{self.mqtt_prefix}/status",
+                        "payload_available": "online",
+                        "payload_not_available": "offline"
+                    }
+                ],
+                "expire_after": 300  # Sensor als offline nach 5 Minuten ohne Update
+            }
+            
+            if icon:
+                discovery_payload["icon"] = icon
+            
+            # Discovery-Nachricht senden
+            result = self.mqtt_client.publish(
+                discovery_topic,
+                json.dumps(discovery_payload),
+                retain=True
+            )
+            
+            if result.rc == mqtt.MQTT_ERR_SUCCESS:
+                logger.info(f"📡 Discovery OK: {sensor_name} → {discovery_topic}")
+                return True
+            else:
+                logger.error(f"❌ Discovery FEHLER: {sensor_name} → {result.rc}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ Discovery Fehler für {sensor_name}: {e}")
+            return False
 
     def get_latest_sensor_data(self) -> Dict[str, float]:
         """Aktuelle Sensor-Daten aus InfluxDB lesen"""
@@ -326,41 +377,79 @@ class Pi5MqttBridge:
         # Status als "online" senden
         self.mqtt_client.publish(f"{self.mqtt_prefix}/status", "online", retain=True)
         
-        for sensor_id, data in sensor_data.items():
-            if sensor_id == 'dht22':
-                # DHT22 - separate Topics für Temperatur und Luftfeuchtigkeit
-                if 'temperature' in data:
-                    topic = f"{self.mqtt_prefix}/dht22_temperature/state"
-                    payload = {"temperature": data['temperature']}
-                    self.mqtt_client.publish(topic, json.dumps(payload))
-                    
-                if 'humidity' in data:
-                    topic = f"{self.mqtt_prefix}/dht22_humidity/state"
-                    payload = {"humidity": data['humidity']}
-                    self.mqtt_client.publish(topic, json.dumps(payload))
-            else:
-                # DS18B20 Temperatursensoren
-                if 'temperature' in data:
-                    topic = f"{self.mqtt_prefix}/{sensor_id}/state"
-                    payload = {"temperature": data['temperature']}
-                    self.mqtt_client.publish(topic, json.dumps(payload))
+        published_count = 0
         
-        logger.info(f"📤 {len(sensor_data)} Sensor-Updates via MQTT gesendet")
+        for sensor_id, data in sensor_data.items():
+            try:
+                if sensor_id == 'dht22':
+                    # DHT22 - separate Topics für Temperatur und Luftfeuchtigkeit
+                    if 'temperature' in data:
+                        topic = f"{self.mqtt_prefix}/dht22_temperature/state"
+                        payload = {"temperature": round(data['temperature'], 1)}
+                        result = self.mqtt_client.publish(topic, json.dumps(payload))
+                        if result.rc == mqtt.MQTT_ERR_SUCCESS:
+                            logger.info(f"📤 DHT22 Temp: {payload['temperature']}°C → {topic}")
+                            published_count += 1
+                        else:
+                            logger.error(f"❌ MQTT Publish Fehler: {result.rc}")
+                        
+                    if 'humidity' in data:
+                        topic = f"{self.mqtt_prefix}/dht22_humidity/state"
+                        payload = {"humidity": round(data['humidity'], 1)}
+                        result = self.mqtt_client.publish(topic, json.dumps(payload))
+                        if result.rc == mqtt.MQTT_ERR_SUCCESS:
+                            logger.info(f"📤 DHT22 Hum: {payload['humidity']}% → {topic}")
+                            published_count += 1
+                        else:
+                            logger.error(f"❌ MQTT Publish Fehler: {result.rc}")
+                else:
+                    # DS18B20 Temperatursensoren
+                    if 'temperature' in data:
+                        sensor_name = self.sensor_labels.get(sensor_id, sensor_id)
+                        topic = f"{self.mqtt_prefix}/{sensor_id}/state"
+                        payload = {"temperature": round(data['temperature'], 1)}
+                        result = self.mqtt_client.publish(topic, json.dumps(payload))
+                        if result.rc == mqtt.MQTT_ERR_SUCCESS:
+                            logger.info(f"📤 {sensor_name}: {payload['temperature']}°C → {topic}")
+                            published_count += 1
+                        else:
+                            logger.error(f"❌ MQTT Publish Fehler: {result.rc}")
+                            
+            except Exception as e:
+                logger.error(f"❌ Fehler beim Senden von {sensor_id}: {e}")
+        
+        logger.info(f"✅ {published_count} MQTT Updates erfolgreich gesendet")
 
     def run_once(self):
         """Einmalige Datenübertragung"""
+        logger.info("🔄 Lese Sensor-Daten...")
         sensor_data = self.get_latest_sensor_data()
         if sensor_data:
             self.publish_sensor_data(sensor_data)
         else:
             logger.warning("⚠️ Keine Sensor-Daten verfügbar")
+            # Status als offline senden wenn keine Daten
+            self.mqtt_client.publish(f"{self.mqtt_prefix}/status", "offline", retain=True)
 
     def run_continuous(self, interval: int = 30):
         """Kontinuierliche Datenübertragung"""
         logger.info(f"🔄 Starte kontinuierliche MQTT Übertragung (alle {interval}s)")
         
+        # Discovery alle 10 Minuten erneut senden (für Robustheit)
+        discovery_interval = 600  # 10 Minuten
+        last_discovery = 0
+        
         try:
             while True:
+                current_time = time.time()
+                
+                # Regelmäßige Discovery (alle 10 Minuten)
+                if current_time - last_discovery > discovery_interval:
+                    logger.info("🔄 Sende Auto-Discovery erneut...")
+                    self.publish_discovery()
+                    last_discovery = current_time
+                
+                # Normale Datenübertragung
                 self.run_once()
                 time.sleep(interval)
                 
@@ -371,11 +460,50 @@ class Pi5MqttBridge:
         finally:
             # Cleanup
             if self.mqtt_client:
+                logger.info("🧹 MQTT Cleanup...")
                 self.mqtt_client.publish(f"{self.mqtt_prefix}/status", "offline", retain=True)
                 self.mqtt_client.loop_stop()
                 self.mqtt_client.disconnect()
             if self.influx_client:
+                logger.info("🧹 InfluxDB Cleanup...")
                 self.influx_client.close()
+
+def test_mqtt_connection(bridge):
+    """Test MQTT Verbindung und Discovery"""
+    logger.info("🧪 MQTT Verbindungstest...")
+    
+    # MQTT Connection Test
+    if not bridge.setup_mqtt():
+        logger.error("❌ MQTT Setup fehlgeschlagen!")
+        return False
+    
+    # Warten auf Verbindung
+    logger.info("⏳ Warte auf MQTT Verbindung...")
+    time.sleep(3)
+    
+    # Discovery Test
+    logger.info("🧪 Teste Auto-Discovery...")
+    bridge.publish_discovery()
+    
+    # Test-Daten senden
+    logger.info("🧪 Sende Test-Daten...")
+    test_data = {
+        'ds18b20_1': {'temperature': 21.5},
+        'ds18b20_2': {'temperature': 45.2},
+        'dht22': {'temperature': 23.1, 'humidity': 65.3}
+    }
+    bridge.publish_sensor_data(test_data)
+    
+    logger.info("✅ MQTT Test abgeschlossen!")
+    time.sleep(2)
+    
+    # Cleanup
+    if bridge.mqtt_client:
+        bridge.mqtt_client.publish(f"{bridge.mqtt_prefix}/status", "offline", retain=True)
+        bridge.mqtt_client.loop_stop()
+        bridge.mqtt_client.disconnect()
+    
+    return True
 
 def main():
     """Hauptfunktion"""
@@ -389,24 +517,55 @@ def main():
     # Bridge initialisieren
     bridge = Pi5MqttBridge()
     
-    # Verbindungen setup
-    if not bridge.setup_mqtt():
-        print("❌ MQTT Setup fehlgeschlagen!")
-        sys.exit(1)
+    # Ausführungsmodus prüfen
+    if len(sys.argv) > 1:
+        mode = sys.argv[1].lower()
         
-    if not bridge.setup_influxdb():
-        print("❌ InfluxDB Setup fehlgeschlagen!")
-        sys.exit(1)
-    
-    # Warten bis MQTT verbunden
-    time.sleep(2)
-    
-    # Ausführungsmodus
-    if len(sys.argv) > 1 and sys.argv[1] == "test":
-        print("🧪 Test-Modus: Einmalige Datenübertragung")
-        bridge.run_once()
+        if mode == "test":
+            print("🧪 Test-Modus: Einmalige Datenübertragung")
+            if not bridge.setup_influxdb():
+                print("❌ InfluxDB Setup fehlgeschlagen!")
+                sys.exit(1)
+            if not bridge.setup_mqtt():
+                print("❌ MQTT Setup fehlgeschlagen!")
+                sys.exit(1)
+            time.sleep(2)
+            bridge.run_once()
+            
+        elif mode == "mqtt-test":
+            print("🧪 MQTT Test-Modus: Verbindung und Discovery testen")
+            test_mqtt_connection(bridge)
+            
+        elif mode == "discovery":
+            print("🏠 Discovery-Modus: Nur Auto-Discovery senden")
+            if not bridge.setup_mqtt():
+                print("❌ MQTT Setup fehlgeschlagen!")
+                sys.exit(1)
+            time.sleep(2)
+            bridge.publish_discovery()
+            time.sleep(2)
+            
+        else:
+            print(f"❌ Unbekannter Modus: {mode}")
+            print("   Verfügbare Modi: test, mqtt-test, discovery")
+            sys.exit(1)
     else:
+        # Kontinuierlicher Modus
         print("🔄 Kontinuierlicher Modus")
+        
+        # Verbindungen setup
+        if not bridge.setup_mqtt():
+            print("❌ MQTT Setup fehlgeschlagen!")
+            sys.exit(1)
+            
+        if not bridge.setup_influxdb():
+            print("❌ InfluxDB Setup fehlgeschlagen!")
+            sys.exit(1)
+        
+        # Warten bis MQTT verbunden
+        time.sleep(2)
+        
+        # Kontinuierlich laufen
         bridge.run_continuous()
 
 if __name__ == "__main__":

@@ -110,11 +110,17 @@ echo "mqtt_discovery = true" >> config.ini
 
 echo "   ✅ config.ini für Home Assistant ($HA_IP) erstellt"
 
-# 5. MQTT Bridge laden
-echo "📥 Lade MQTT Bridge..."
-curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/mqtt_bridge.py -o mqtt_bridge.py
-curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/setup_mqtt_service.sh -o setup_mqtt_service.sh
-chmod +x setup_mqtt_service.sh
+# 5. MQTT Bridge Script kopieren
+echo "� Kopiere MQTT Bridge Script..."
+wget -q https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/mqtt_bridge.py -O ~/pi5-sensors/mqtt_bridge.py
+wget -q https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/mqtt_debug.py -O ~/pi5-sensors/mqtt_debug.py
+chmod +x ~/pi5-sensors/mqtt_bridge.py
+chmod +x ~/pi5-sensors/mqtt_debug.py
+
+echo "🧪 MQTT Debug Tools installiert:"
+echo "   ~/pi5-sensors/mqtt_debug.py - MQTT Verbindungstest"
+echo "   python ~/pi5-sensors/mqtt_bridge.py mqtt-test - MQTT Bridge Test"
+echo "   python ~/pi5-sensors/mqtt_bridge.py discovery - Nur Discovery senden"
 
 # 6. Service installieren
 echo "⚙️ Installiere Service..."

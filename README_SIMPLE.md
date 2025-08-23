@@ -157,8 +157,25 @@ sudo modprobe w1-therm
 # MQTT Service neu starten
 sudo systemctl restart pi5-mqtt-bridge
 
-# MQTT Topics testen
-mosquitto_sub -t 'pi5_heizung/+/state' -v
+# MQTT Bridge Status
+sudo systemctl status pi5-mqtt-bridge
+sudo journalctl -u pi5-mqtt-bridge -f
+
+# MQTT Verbindung testen
+cd ~/pi5-sensors
+python mqtt_debug.py
+
+# MQTT Bridge direkt testen
+python mqtt_bridge.py mqtt-test
+
+# Nur Discovery senden
+python mqtt_bridge.py discovery
+
+# Topics in Home Assistant prüfen
+mosquitto_sub -h DEINE_HA_IP -u MQTT_USER -P MQTT_PASS -t 'homeassistant/sensor/pi5_heizung_+/config' -v
+
+# Sensor-Daten prüfen
+mosquitto_sub -h DEINE_HA_IP -u MQTT_USER -P MQTT_PASS -t 'pi5_heizung/+/state' -v
 
 # Konfiguration prüfen
 nano ~/pi5-sensors/config.ini
