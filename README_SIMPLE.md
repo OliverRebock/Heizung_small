@@ -26,8 +26,15 @@ Für Home Assistant MQTT Integration:
 # Option 1: Parameter-Installation (EMPFOHLEN für curl | bash)
 curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_ultra_simple.sh | bash -s -- HA_IP MQTT_USER MQTT_PASS
 
-# Beispiel:
-curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_ultra_simple.sh | bash -s -- 192.168.1.100 mqtt_user mqtt_pass
+# Beispiel mit echten Werten:
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_ultra_simple.sh | bash -s -- 192.168.1.100 homeassistant mySecretPassword
+
+# Weitere Beispiele:
+# Fritzbox Standard IP:
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_ultra_simple.sh | bash -s -- 192.168.178.50 mqtt_user mqtt123
+
+# Home Assistant mit Docker/VM:
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_ultra_simple.sh | bash -s -- 192.168.1.200 pi5sensors HeizungMQTT2024
 
 # Option 2: Interaktive Installation
 wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_ultra_simple.sh
@@ -51,6 +58,31 @@ sudo systemctl status pi5-mqtt-bridge
 - 📡 **Sendet direkt an Home Assistant MQTT Broker** (nicht lokaler Broker!)
 - 🏠 **Home Assistant IP** als Parameter oder interaktiv
 - 🔐 **MQTT Username/Passwort** für Home Assistant als Parameter oder interaktiv
+
+**🔍 Wie finde ich meine Werte?**
+
+**Home Assistant IP-Adresse:**
+- Home Assistant Web-Interface URL: `http://DEINE_HA_IP:8123`
+- Router Admin Panel → Geräteliste
+- Oder im Terminal: `nmap -sn 192.168.1.0/24` (suche nach Home Assistant)
+
+**MQTT Credentials in Home Assistant:**
+1. **Settings** → **Add-ons** → **Mosquitto broker** → **Configuration**
+2. Oder **Settings** → **People** → **Users** → MQTT User erstellen
+3. **Standard MQTT User**: Oft `homeassistant` oder `mqtt`
+4. **MQTT Port**: Standard `1883` (wird automatisch verwendet)
+
+**📋 Typische Setups:**
+```bash
+# Home Assistant OS (Standard):
+# IP: 192.168.1.100, User: homeassistant, Pass: dein-ha-password
+
+# Home Assistant Docker:  
+# IP: 192.168.1.200, User: mqtt, Pass: mqtt-password
+
+# Synology NAS Home Assistant:
+# IP: 192.168.1.150, User: ha-mqtt, Pass: NAS-Password
+```
 
 **Features:**
 - 🔄 **Auto-Discovery** für alle 9 Sensoren in Home Assistant
@@ -171,11 +203,14 @@ python mqtt_bridge.py mqtt-test
 # Nur Discovery senden
 python mqtt_bridge.py discovery
 
-# Topics in Home Assistant prüfen
-mosquitto_sub -h DEINE_HA_IP -u MQTT_USER -P MQTT_PASS -t 'homeassistant/sensor/pi5_heizung_+/config' -v
+# Topics in Home Assistant prüfen (mit echten Werten)
+mosquitto_sub -h 192.168.1.100 -u homeassistant -P mySecretPassword -t 'homeassistant/sensor/pi5_heizung_+/config' -v
 
-# Sensor-Daten prüfen
-mosquitto_sub -h DEINE_HA_IP -u MQTT_USER -P MQTT_PASS -t 'pi5_heizung/+/state' -v
+# Sensor-Daten prüfen (mit echten Werten)  
+mosquitto_sub -h 192.168.1.100 -u homeassistant -P mySecretPassword -t 'pi5_heizung/+/state' -v
+
+# Alle MQTT Topics anzeigen
+mosquitto_sub -h 192.168.1.100 -u homeassistant -P mySecretPassword -t '#' -v
 
 # Konfiguration prüfen
 nano ~/pi5-sensors/config.ini
