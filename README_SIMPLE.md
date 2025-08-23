@@ -106,6 +106,21 @@ cd ~/pi5-sensors
 docker compose up -d
 ```
 
+### Docker Permission Problem?
+```bash
+# Schneller Fix
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_docker_permission.sh | bash
+
+# Oder manuell:
+sudo usermod -aG docker $USER
+sudo systemctl restart docker
+cd ~/pi5-sensors
+sudo docker compose up -d
+
+# Nach Neustart funktioniert es ohne sudo
+sudo reboot
+```
+
 ### Sensoren werden nicht erkannt?
 ```bash
 # GPIO prüfen

@@ -50,6 +50,23 @@ if ! groups $USER | grep -q docker; then
     echo "   ✅ User zur docker group hinzugefügt"
 fi
 
+# Docker Service starten und aktivieren
+sudo systemctl enable docker
+sudo systemctl start docker
+
+# Warten bis Docker bereit ist
+echo "⏳ Warte auf Docker Service..."
+sleep 5
+
+# Docker Status prüfen
+if sudo systemctl is-active --quiet docker; then
+    echo "   ✅ Docker Service läuft"
+else
+    echo "   ⚠️ Docker Service Problem - versuche Neustart"
+    sudo systemctl restart docker
+    sleep 5
+fi
+
 # Docker starten (ohne enable - das macht Probleme)
 sudo systemctl start docker 2>/dev/null || true
 sleep 3
@@ -422,12 +439,21 @@ sudo systemctl enable pi5-sensors.service
 # =============================================================================
 echo "🚀 Starte Docker Container..."
 if command -v docker &> /dev/null && sudo systemctl is-active --quiet docker; then
-    # Prüfe ob User in docker group ist, sonst sudo verwenden
-    if groups $USER | grep -q docker; then
+    
+    # Prüfe Docker-Berechtigung mit tatsächlichem Test
+    if docker info &>/dev/null; then
+        echo "   ✅ Docker Berechtigung OK"
         docker compose up -d
     else
-        echo "   ⚠️ User noch nicht in docker group - verwende sudo"
+        echo "   ⚠️ Docker Permission Problem - verwende sudo"
+        echo "   💡 Tipp: Nach Neustart funktioniert Docker ohne sudo"
         sudo docker compose up -d
+        
+        # Zusätzlich User zur docker group hinzufügen (falls nicht schon geschehen)
+        if ! groups $USER | grep -q docker; then
+            sudo usermod -aG docker $USER
+            echo "   ✅ User $USER zur docker group hinzugefügt"
+        fi
     fi
     echo "   ✅ Container gestartet"
     
