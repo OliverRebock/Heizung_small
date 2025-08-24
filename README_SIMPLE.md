@@ -183,8 +183,13 @@ docker compose up -d
 
 ### 📊 Grafana Subpath (/grafana/) funktioniert nicht?
 ```bash
-# 🚨 WELCOME SCREEN FIX - "Welcome to Grafana" nicht wegklickbar
+# 🚨 SUPER-AGGRESSIVE WELCOME SCREEN KILLER (bei hartnäckigem "Welcome to Grafana")
 cd ~/pi5-sensors
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/kill_grafana_welcome_brutal.sh
+chmod +x kill_grafana_welcome_brutal.sh
+./kill_grafana_welcome_brutal.sh
+
+# 🚨 WELCOME SCREEN FIX - "Welcome to Grafana" nicht wegklickbar
 wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_grafana_welcome_screen.sh
 chmod +x fix_grafana_welcome_screen.sh
 ./fix_grafana_welcome_screen.sh
