@@ -190,6 +190,17 @@ docker compose up -d
 
 ### 📊 Grafana Subpath (/grafana/) funktioniert nicht?
 ```bash
+# 🚨 ORGANIZATION NOT FOUND FIX ({"message":"organization not found","statusCode":404})
+cd ~/pi5-sensors
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_organization_not_found.sh
+chmod +x fix_organization_not_found.sh
+./fix_organization_not_found.sh
+
+# 🐳 DOCKER COMPOSE DOMAIN FIX (für dermesser.fritz.box Organization Problem)
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_docker_compose_domain.sh
+chmod +x fix_docker_compose_domain.sh
+./fix_docker_compose_domain.sh
+
 # 🚨 SERVE_FROM_SUB_PATH SOFORT-FIX (bei Welcome Screen trotz korrekter Config)
 cd ~/pi5-sensors
 wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_serve_from_sub_path.sh
