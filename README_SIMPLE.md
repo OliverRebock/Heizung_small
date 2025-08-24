@@ -13,7 +13,14 @@
 ## ⚡ Installation (Ein Befehl!)
 
 ```bash
+# 🚨 NUCLEAR OPTION - ULTIMATE WELCOME SCREEN KILLER (für Neuinstallation)
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_complete_nuclear.sh | bash
+
+# Standard Installation (bewährt)
 curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_simple.sh | bash
+
+# NUCLEAR mit MQTT (Home Assistant Integration sofort):
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_complete_nuclear.sh | bash -s -- 192.168.1.100 homeassistant mySecretPassword
 ```
 
 **Das war's!** Nach dem Neustart läuft alles.

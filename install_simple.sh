@@ -343,13 +343,22 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # 🔓 GRAFANA OHNE LOGIN!
+      # � NUCLEAR WELCOME SCREEN ELIMINATION
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=true
       - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION=true
+      - GF_SECURITY_ADMIN_USER=
+      - GF_SECURITY_ADMIN_PASSWORD=
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      - GF_SNAPSHOTS_EXTERNAL_ENABLED=false
+      - GF_FEATURE_TOGGLES_ENABLE=
+      - GF_UNIFIED_ALERTING_ENABLED=false
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
     depends_on:
       - influxdb
 
@@ -437,11 +446,11 @@ sudo systemctl enable pi5-sensors.service
 # =============================================================================
 # 9. GRAFANA KONFIGURATION VORBEREITEN
 # =============================================================================
-echo "🔧 Grafana für Subpath konfigurieren..."
+echo "🔧 Grafana ANTI-WELCOME-SCREEN Konfiguration (Nuclear-Level)..."
 mkdir -p grafana
 cat > grafana/grafana.ini << 'EOL'
-# Grafana Configuration für Pi 5 Sensor Monitor
-# Keine Authentifizierung für lokalen Betrieb
+# GRAFANA NUCLEAR CONFIGURATION - WELCOME SCREEN KILLER
+# Alle möglichen Disables für Welcome Screen Elimination
 
 [server]
 http_port = 3000
@@ -458,7 +467,7 @@ disable_signout_menu = true
 enabled = true
 org_name = Pi5SensorOrg
 org_role = Admin
-hide_version = false
+hide_version = true
 
 [users]
 allow_sign_up = false
@@ -471,6 +480,9 @@ default_theme = dark
 allow_embedding = true
 cookie_secure = false
 cookie_samesite = lax
+disable_initial_admin_creation = true
+admin_user = 
+admin_password = 
 
 [plugins]
 enable_alpha = false
@@ -478,6 +490,26 @@ app_tls_skip_verify_insecure = false
 
 [install]
 check_for_updates = false
+
+[database]
+type = sqlite3
+host = 127.0.0.1:3306
+name = grafana
+user = root
+password = 
+
+[analytics]
+reporting_enabled = false
+check_for_updates = false
+
+[snapshots]
+external_enabled = false
+
+[feature_toggles]
+enable = 
+
+[unified_alerting]
+enabled = false
 
 [log]
 mode = console
