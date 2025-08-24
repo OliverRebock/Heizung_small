@@ -179,6 +179,20 @@ cd ~/pi5-sensors
 docker compose up -d
 ```
 
+### 📊 Grafana Subpath (/grafana/) funktioniert nicht?
+```bash
+# Grafana Docker Konfiguration prüfen
+cd ~/pi5-sensors
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/diagnose_grafana_config.sh
+chmod +x diagnose_grafana_config.sh
+./diagnose_grafana_config.sh
+
+# Grafana Docker Konfiguration reparieren
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_grafana_docker_config.sh
+chmod +x fix_grafana_docker_config.sh
+./fix_grafana_docker_config.sh
+```
+
 ### Docker Permission Problem?
 ```bash
 # Schneller Fix
