@@ -190,6 +190,17 @@ docker compose up -d
 
 ### 📊 Grafana Subpath (/grafana/) funktioniert nicht?
 ```bash
+# 🚨 SERVE_FROM_SUB_PATH SOFORT-FIX (bei Welcome Screen trotz korrekter Config)
+cd ~/pi5-sensors
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_serve_from_sub_path.sh
+chmod +x fix_serve_from_sub_path.sh
+./fix_serve_from_sub_path.sh
+
+# 🔍 WELCOME SCREEN DIAGNOSE (um das Problem zu analysieren)
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/diagnose_welcome_screen.sh
+chmod +x diagnose_welcome_screen.sh
+./diagnose_welcome_screen.sh
+
 # 🚨 SUPER-AGGRESSIVE WELCOME SCREEN KILLER (bei hartnäckigem "Welcome to Grafana")
 cd ~/pi5-sensors
 wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/kill_grafana_welcome_brutal.sh
