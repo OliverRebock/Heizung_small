@@ -96,11 +96,13 @@ sudo systemctl status pi5-mqtt-bridge
 ## 🌐 Zugriff
 
 - **📊 Grafana**: `http://PI_IP:3000` (kein Login!)
-- **🗄️ InfluxDB**: `http://PI_IP:8086` (admin/pi5sensors2024)
+- **� Grafana Subpath**: `http://PI_IP:3000/grafana/` (für Reverse Proxy)
+- **�🗄️ InfluxDB**: `http://PI_IP:8086` (admin/pi5sensors2024)
 
 **Neue Features:**
-- ✨ **Subpath Support**: Grafana läuft auch unter `/grafana/` Pfad
-- 🔧 **Professionelle Konfiguration**: Optimiert für Reverse Proxy Setup
+- ✨ **Flexible Subpath Support**: Funktioniert mit IP, Hostname, .fritz.box, .local
+- 🔧 **Domain-spezifische Konfiguration**: `dermesser.fritz.box:3000/grafana/`
+- 🌐 **Professionelle Konfiguration**: Optimiert für Reverse Proxy Setup
 
 ## 🏷️ Sensornamen ändern
 
@@ -181,13 +183,23 @@ docker compose up -d
 
 ### 📊 Grafana Subpath (/grafana/) funktioniert nicht?
 ```bash
-# Grafana Docker Konfiguration prüfen
+# Universal Grafana Subpath Konfiguration (EMPFOHLEN)
 cd ~/pi5-sensors
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/configure_grafana_subpath.sh
+chmod +x configure_grafana_subpath.sh
+./configure_grafana_subpath.sh
+
+# Beispiele für direkte Konfiguration:
+./configure_grafana_subpath.sh 192.168.1.100
+./configure_grafana_subpath.sh dermesser.fritz.box  
+./configure_grafana_subpath.sh pi5.local
+
+# Grafana Docker Konfiguration prüfen
 wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/diagnose_grafana_config.sh
 chmod +x diagnose_grafana_config.sh
 ./diagnose_grafana_config.sh
 
-# Grafana Docker Konfiguration reparieren
+# Grafana Docker Konfiguration reparieren (Fallback)
 wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_grafana_docker_config.sh
 chmod +x fix_grafana_docker_config.sh
 ./fix_grafana_docker_config.sh

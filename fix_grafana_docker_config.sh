@@ -18,12 +18,12 @@ if [ ! -f "grafana/grafana.ini" ]; then
     # Erstelle korrekte grafana.ini
     cat > grafana/grafana.ini << 'EOF'
 # Grafana Configuration für Pi 5 Sensor Monitor
-# Keine Authentifizierung für lokalen Betrieb
+# Flexible Domain-Konfiguration für Subpath
 
 [server]
 http_port = 3000
-domain = localhost
-root_url = %(protocol)s://%(domain)s/grafana/
+domain = %(domain)s
+root_url = %(protocol)s://%(domain)s:%(http_port)s/grafana/
 serve_from_sub_path = true
 enable_gzip = true
 
@@ -74,19 +74,19 @@ fi
 
 # Prüfe ob root_url korrekt ist
 echo "🔍 Prüfe root_url Einstellung..."
-if grep -q "root_url = %(protocol)s://%(domain)s/grafana/" grafana/grafana.ini; then
-    echo "✅ root_url ist korrekt konfiguriert"
+if grep -q "root_url.*grafana" grafana/grafana.ini; then
+    echo "✅ root_url ist konfiguriert"
 else
     echo "🔧 Korrigiere root_url Einstellung..."
     # Backup erstellen
     cp grafana/grafana.ini grafana/grafana.ini.backup
     
-    # root_url korrigieren
-    sed -i 's|^root_url =.*|root_url = %(protocol)s://%(domain)s/grafana/|' grafana/grafana.ini
+    # root_url korrigieren für flexible Domain-Verwendung
+    sed -i 's|^root_url =.*|root_url = %(protocol)s://%(domain)s:%(http_port)s/grafana/|' grafana/grafana.ini
     
     # Falls root_url nicht existiert, hinzufügen
     if ! grep -q "root_url" grafana/grafana.ini; then
-        sed -i '/^\[server\]/a root_url = %(protocol)s://%(domain)s/grafana/' grafana/grafana.ini
+        sed -i '/^\[server\]/a root_url = %(protocol)s://%(domain)s:%(http_port)s/grafana/' grafana/grafana.ini
     fi
     
     # serve_from_sub_path hinzufügen falls nicht vorhanden
@@ -94,7 +94,7 @@ else
         sed -i '/^root_url/a serve_from_sub_path = true' grafana/grafana.ini
     fi
     
-    echo "✅ root_url korrigiert"
+    echo "✅ root_url korrigiert für flexible Domain-Verwendung"
 fi
 
 echo ""
