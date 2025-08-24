@@ -183,8 +183,18 @@ docker compose up -d
 
 ### 📊 Grafana Subpath (/grafana/) funktioniert nicht?
 ```bash
-# Universal Grafana Subpath Konfiguration (EMPFOHLEN)
+# 🚨 SOFORT-REPARATUR für dermesser.fritz.box:3000/grafana/ (bei "Page not found")
 cd ~/pi5-sensors
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_grafana_subpath_emergency.sh
+chmod +x fix_grafana_subpath_emergency.sh
+./fix_grafana_subpath_emergency.sh
+
+# URL-Test ausführen
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/test_grafana_urls.sh
+chmod +x test_grafana_urls.sh
+./test_grafana_urls.sh
+
+# Universal Grafana Subpath Konfiguration (EMPFOHLEN für neue Installation)
 wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/configure_grafana_subpath.sh
 chmod +x configure_grafana_subpath.sh
 ./configure_grafana_subpath.sh
@@ -198,11 +208,6 @@ chmod +x configure_grafana_subpath.sh
 wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/diagnose_grafana_config.sh
 chmod +x diagnose_grafana_config.sh
 ./diagnose_grafana_config.sh
-
-# Grafana Docker Konfiguration reparieren (Fallback)
-wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_grafana_docker_config.sh
-chmod +x fix_grafana_docker_config.sh
-./fix_grafana_docker_config.sh
 ```
 
 ### Docker Permission Problem?
