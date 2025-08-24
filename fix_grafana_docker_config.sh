@@ -109,23 +109,46 @@ echo ""
 echo "⏱️ Warte bis Grafana startet..."
 sleep 10
 
-# Teste ob Container läuft
-if docker ps | grep pi5-sensor-grafana; then
-    echo "✅ Grafana Container läuft"
-else
-    echo "❌ Grafana Container startet nicht - prüfe Logs:"
-    docker logs pi5-sensor-grafana
-    exit 1
+# Finde Grafana Container Name dynamisch
+GRAFANA_CONTAINER=$(docker ps --format "table {{.Names}}" | grep -E "(grafana|pi5.*grafana)" | head -1)
+
+if [ -z "$GRAFANA_CONTAINER" ]; then
+    echo "❌ Grafana Container nicht gefunden!"
+    echo "🔍 Verfügbare Container:"
+    docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+    echo ""
+    echo "🔧 Alle Container anzeigen (auch gestoppte):"
+    docker ps -a --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+    echo ""
+    echo "🚀 Versuche alle Container zu starten:"
+    docker compose up -d
+    sleep 5
+    
+    # Nochmal prüfen
+    GRAFANA_CONTAINER=$(docker ps --format "table {{.Names}}" | grep -E "(grafana|pi5.*grafana)" | head -1)
+    if [ -z "$GRAFANA_CONTAINER" ]; then
+        echo "❌ Grafana Container immer noch nicht gefunden!"
+        echo "🔧 docker-compose.yml prüfen:"
+        if [ -f "docker-compose.yml" ]; then
+            echo "📄 Grafana Service in docker-compose.yml:"
+            grep -A 10 -B 2 "grafana:" docker-compose.yml || echo "❌ Grafana Service nicht in docker-compose.yml gefunden"
+        else
+            echo "❌ docker-compose.yml nicht gefunden!"
+        fi
+        exit 1
+    fi
 fi
+
+echo "✅ Grafana Container gefunden: $GRAFANA_CONTAINER"
 
 echo ""
 echo "🔍 Prüfe Mount im Container..."
-CONTAINER_ROOT_URL=$(docker exec pi5-sensor-grafana grep "root_url" /etc/grafana/grafana.ini 2>/dev/null || echo "NICHT_GEFUNDEN")
+CONTAINER_ROOT_URL=$(docker exec "$GRAFANA_CONTAINER" grep "root_url" /etc/grafana/grafana.ini 2>/dev/null || echo "NICHT_GEFUNDEN")
 
 if [ "$CONTAINER_ROOT_URL" = "NICHT_GEFUNDEN" ]; then
     echo "❌ grafana.ini nicht korrekt gemounted!"
     echo "🔧 Debug-Info:"
-    docker exec pi5-sensor-grafana ls -la /etc/grafana/
+    docker exec "$GRAFANA_CONTAINER" ls -la /etc/grafana/ || echo "❌ Kann Container-Dateien nicht lesen"
     exit 1
 else
     echo "✅ grafana.ini korrekt gemounted"
@@ -151,7 +174,7 @@ if curl -s -f http://localhost:3000/grafana/ >/dev/null; then
 else
     echo "❌ Subpath URL nicht erreichbar"
     echo "🔧 Prüfe Container Logs:"
-    docker logs --tail 20 pi5-sensor-grafana
+    docker logs --tail 20 "$GRAFANA_CONTAINER" || echo "❌ Kann Container Logs nicht lesen"
 fi
 
 echo ""
@@ -163,5 +186,5 @@ echo "   🌐 Standard: http://PI_IP:3000"
 echo "   🌐 Subpath:  http://PI_IP:3000/grafana/"
 echo ""
 echo "🔧 Falls Probleme bestehen:"
-echo "   docker logs pi5-sensor-grafana"
-echo "   docker exec pi5-sensor-grafana cat /etc/grafana/grafana.ini"
+echo "   docker logs $GRAFANA_CONTAINER"
+echo "   docker exec $GRAFANA_CONTAINER cat /etc/grafana/grafana.ini"

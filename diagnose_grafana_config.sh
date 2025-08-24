@@ -10,13 +10,28 @@ echo "========================================"
 
 # Prüfe ob Container läuft
 echo "📦 Prüfe Docker Container Status..."
-if ! docker ps | grep pi5-sensor-grafana; then
+GRAFANA_CONTAINER=$(docker ps --format "{{.Names}}" | grep -E "(grafana|pi5.*grafana)" | head -1)
+
+if [ -z "$GRAFANA_CONTAINER" ]; then
     echo "❌ Grafana Container läuft nicht!"
+    echo "🔍 Verfügbare Container:"
+    docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+    echo ""
     echo "🔧 Starte Container:"
     cd ~/pi5-sensors
     docker compose up -d grafana
     sleep 5
+    
+    # Nochmal prüfen
+    GRAFANA_CONTAINER=$(docker ps --format "{{.Names}}" | grep -E "(grafana|pi5.*grafana)" | head -1)
+    if [ -z "$GRAFANA_CONTAINER" ]; then
+        echo "❌ Grafana Container startet nicht!"
+        echo "🔧 Debug mit: wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/debug_docker_containers.sh"
+        exit 1
+    fi
 fi
+
+echo "✅ Grafana Container gefunden: $GRAFANA_CONTAINER"
 
 echo ""
 echo "📁 Lokale grafana.ini Datei:"
@@ -38,7 +53,7 @@ echo "================================="
 echo "🔍 Prüfe ob grafana.ini im Container gemounted ist..."
 
 # Prüfe Container-Konfiguration
-CONTAINER_CONFIG=$(docker exec pi5-sensor-grafana cat /etc/grafana/grafana.ini 2>/dev/null || echo "FEHLER")
+CONTAINER_CONFIG=$(docker exec "$GRAFANA_CONTAINER" cat /etc/grafana/grafana.ini 2>/dev/null || echo "FEHLER")
 
 if [ "$CONTAINER_CONFIG" = "FEHLER" ]; then
     echo "❌ Kann grafana.ini im Container nicht lesen!"
@@ -50,7 +65,7 @@ if [ "$CONTAINER_CONFIG" = "FEHLER" ]; then
     echo "   docker compose up -d"
     echo ""
     echo "2. Mount-Punkt prüfen:"
-    echo "   docker exec pi5-sensor-grafana ls -la /etc/grafana/"
+    echo "   docker exec $GRAFANA_CONTAINER ls -la /etc/grafana/"
     
 else
     echo "✅ grafana.ini im Container gefunden"
@@ -100,7 +115,7 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/grafana/ || echo "�
 echo ""
 echo "📋 Docker Volume Mount Info:"
 echo "============================"
-docker inspect pi5-sensor-grafana | grep -A 5 -B 5 "grafana.ini" || echo "❌ Mount Info nicht gefunden"
+docker inspect "$GRAFANA_CONTAINER" | grep -A 5 -B 5 "grafana.ini" || echo "❌ Mount Info nicht gefunden"
 
 echo ""
 echo "✅ Diagnose abgeschlossen!"
