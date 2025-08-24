@@ -183,8 +183,13 @@ docker compose up -d
 
 ### 📊 Grafana Subpath (/grafana/) funktioniert nicht?
 ```bash
-# 🚨 SOFORT-REPARATUR für dermesser.fritz.box:3000/grafana/ (bei "Page not found")
+# 🚨 WELCOME SCREEN FIX - "Welcome to Grafana" nicht wegklickbar
 cd ~/pi5-sensors
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_grafana_welcome_screen.sh
+chmod +x fix_grafana_welcome_screen.sh
+./fix_grafana_welcome_screen.sh
+
+# 🚨 SOFORT-REPARATUR für dermesser.fritz.box:3000/grafana/ (bei "Page not found")
 wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/fix_grafana_subpath_emergency.sh
 chmod +x fix_grafana_subpath_emergency.sh
 ./fix_grafana_subpath_emergency.sh
