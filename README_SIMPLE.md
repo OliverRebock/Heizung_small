@@ -51,7 +51,60 @@ curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/inst
 - **InfluxDB**: Port 8087 (falls 8086 belegt)  
 - **Container**: `pi5-sensors-grafana`, `pi5-sensors-influxdb`
 
-### 🟢 **SCHRITT 2B: FÜR NEUE/LEERE SYSTEME:**
+### 🌡️ **SCHRITT 2C: OHNE GRAFANA (InfluxDB + Sensoren)**
+
+```bash
+# Für Systeme mit bereits existierender Grafana
+# Installiert: InfluxDB + Sensoren, OHNE Grafana
+
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_without_grafana.sh | bash
+```
+
+**Installiert:**
+- ✅ **InfluxDB** (Docker Container, Port 8086/8087)
+- ✅ **Pi5 Sensor Reader** (8x DS18B20 + 1x DHT22)
+- ✅ **Systemd Service** (pi5-sensors)
+
+**Installiert NICHT:**
+- ❌ **Grafana** (verwendest deine existierende)
+
+**InfluxDB Datenquelle für deine Grafana:**
+- **URL**: `http://localhost:8086` (oder 8087 bei Konflikten)
+- **Token**: `pi5-token-2024`
+- **Organisation**: `pi5org`
+- **Bucket**: `sensors`
+
+### 🔧 **SCHRITT 2D: NUR SENSOREN (KEIN Docker/Grafana)**
+
+```bash
+# Für Systeme mit bereits existierender InfluxDB/Grafana
+# Installiert NUR: Python + Sensoren + Service (KEIN Docker!)
+
+# Parameter-Installation:
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_sensors_only.sh | bash -s -- INFLUX_URL TOKEN ORG BUCKET
+
+# Beispiele:
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_sensors_only.sh | bash -s -- http://localhost:8086 myToken myOrg sensors
+
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_sensors_only.sh | bash -s -- http://192.168.1.100:8086 influx-token homelab pi5-sensors
+
+# Interaktive Installation:
+wget https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_sensors_only.sh
+chmod +x install_sensors_only.sh
+./install_sensors_only.sh
+```
+
+**Installiert NUR:**
+- ✅ **Python Umgebung** + Sensor Packages  
+- ✅ **Pi5 Sensor Reader** (8x DS18B20 + 1x DHT22)
+- ✅ **Systemd Service** (pi5-sensors-standalone)
+
+**Installiert NICHT:**
+- ❌ **Docker** (verwendet existierende Installation)
+- ❌ **Grafana** (verwendet existierende Installation)  
+- ❌ **InfluxDB** (verwendet existierende Installation)
+
+### 🟢 **SCHRITT 2E: FÜR NEUE/LEERE SYSTEME:**
 
 ```bash
 # 🚨 NUCLEAR OPTION - ULTIMATE WELCOME SCREEN KILLER (für Neuinstallation)
