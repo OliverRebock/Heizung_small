@@ -2,7 +2,24 @@
 
 **Ein-Befehl Installation** für 9 Sensoren am Raspberry Pi 5.
 
-## 🎯 Was ist das?
+## 🎯 Was## 🌐 Zugriff
+
+### 🔧 **NEUE/LEERE Systeme:**
+- **📊 Grafana**: `http://PI_IP:3000` (kein Login!)
+- **📊 Grafana Subpath**: `http://PI_IP:3000/grafana/` (für Reverse Proxy)
+- **🗄️ InfluxDB**: `http://PI_IP:8086` (admin/pi5sensors2024)
+
+### 🚨 **SYSTEME MIT EXISTIERENDEM DOCKER/GRAFANA:**
+- **📊 Grafana**: `http://PI_IP:3001/grafana/` (konfliktfreier Port)
+- **📊 Grafana (Domain)**: `http://dermesser.fritz.box:3001/grafana/`
+- **🗄️ InfluxDB**: `http://PI_IP:8087` (admin/pi5sensors2024)
+
+**Neue Features:**
+- ✨ **Automatische Port-Erkennung**: Verwendet freie Ports (3001, 8087)
+- 🔧 **Konflikt-sichere Container**: `pi5-sensors-` Prefix
+- 🌐 **Flexible Subpath Support**: Funktioniert mit IP, Hostname, .fritz.box, .local
+- 🔧 **Domain-spezifische Konfiguration**: `dermesser.fritz.box:PORT/grafana/`
+- 🌐 **Professionelle Konfiguration**: Optimiert für Reverse Proxy Setup
 
 - **8x DS18B20** Temperatursensoren
 - **1x DHT22** (Temperatur + Luftfeuchtigkeit)
@@ -11,6 +28,30 @@
 - **Python venv** für DHT22 Kompatibilität
 
 ## ⚡ Installation (Ein Befehl!)
+
+### � **SCHRITT 1: Docker Konflikt-Check (EMPFOHLEN)**
+
+```bash
+# Prüfe ob bereits Docker/Grafana Services laufen
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/check_docker_conflicts.sh | bash
+```
+
+### �🚨 **SCHRITT 2A: FÜR SYSTEME MIT BEREITS LAUFENDEM DOCKER/GRAFANA:**
+
+```bash
+# 🔧 KONFLIKT-SICHERE Installation (andere Ports & Container-Namen)
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_existing_docker.sh | bash
+
+# 🏠 KONFLIKT-SICHERE Installation MIT Home Assistant MQTT:
+curl -sSL https://raw.githubusercontent.com/OliverRebock/Heizung_small/main/install_mqtt_existing_docker.sh | bash -s -- 192.168.1.100 homeassistant mySecretPassword
+```
+
+**Verwendet automatisch freie Ports:**
+- **Grafana**: Port 3001 (falls 3000 belegt)
+- **InfluxDB**: Port 8087 (falls 8086 belegt)  
+- **Container**: `pi5-sensors-grafana`, `pi5-sensors-influxdb`
+
+### 🟢 **SCHRITT 2B: FÜR NEUE/LEERE SYSTEME:**
 
 ```bash
 # 🚨 NUCLEAR OPTION - ULTIMATE WELCOME SCREEN KILLER (für Neuinstallation)
